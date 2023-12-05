@@ -1,7 +1,8 @@
 import socket
 import cv2
 
-
+SERVERIP= "10.0.0.17"
+SERVERPORT = 8485
 def get_video(vid):
     # define a video capture object
 
@@ -13,7 +14,7 @@ def get_video(vid):
 
 def main():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(('10.0.0.13', 8485))  # IP could be 127.0.0.1 if local ip
+    client_socket.connect((SERVERIP, SERVERPORT))  # IP could be 127.0.0.1 if local ip
     #Maybe use threading to send video and also receive messages at the same time
     vid = cv2.VideoCapture(0)
     while (True):
