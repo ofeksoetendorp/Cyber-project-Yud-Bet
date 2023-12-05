@@ -3,7 +3,66 @@ import cv2
 import numpy
 import sys
 # define a video capture object
+
+import cv2
+import numpy as np
+file_path = r"captured_picture.jpg"
+
+def get_image_size_in_memory_len(image_path):
+    # Read the image
+    image = cv2.imread(image_path)
+
+    # Check if the image is loaded successfully
+    if image is None:
+        print(f"Error: Could not load the image at {image_path}.")
+        return
+
+    # Convert the image to a NumPy array
+    image_array = np.array(image)
+
+    # Convert the NumPy array to bytes
+    image_bytes = image_array.tobytes()
+
+    # Get the size of the image in memory using len()
+    size_in_memory = len(image_bytes)
+
+    print(f"The size of the image in memory is approximately {type(image_bytes)} {size_in_memory} or {sys.getsizeof(image_bytes)} bytes.")
+
+# Example usage
+get_image_size_in_memory_len(r"captured_picture.jpg")
+#read_photo = open(file_path,"rb").read()
+#print(len(read_photo))
 """
+def take_picture(file_path='captured_picture.jpg'):
+    # Open a connection to the camera (0 represents the default camera)
+    cap = cv2.VideoCapture(0)
+
+    # Check if the camera is opened successfully
+    if not cap.isOpened():
+        print("Error: Could not open camera.")
+        return
+
+    # Capture a single frame
+    ret, frame = cap.read()
+
+    # Check if the frame is captured successfully
+    if not ret:
+        print("Error: Could not capture frame.")
+        cap.release()  # Release the camera
+        return
+
+    # Save the captured frame to a file
+    cv2.imwrite(file_path, frame)
+
+    # Release the camera
+    cap.release()
+
+    print(f"Picture captured and saved to {file_path}.")
+
+# Example usage
+take_picture('captured_picture.jpg')
+
+
 vid = cv2.VideoCapture(0)
 ret, frame = vid.read()
 numpy.set_printoptions(threshold=sys.maxsize)
@@ -21,7 +80,7 @@ xBytes = frame.tobytes()
 
 newX = numpy.ndarray(frame.shape,frame.dtype,xBytes)
 print(numpy.array_equal(frame,newX))
-"""
+
 vid = cv2.VideoCapture(0)
 
 while (True):
@@ -57,4 +116,4 @@ while (True):
 # After the loop release the cap object 
 vid.release()
 # Destroy all the windows 
-cv2.destroyAllWindows()
+cv2.destroyAllWindows()"""
