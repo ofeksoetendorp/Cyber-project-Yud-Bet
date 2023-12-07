@@ -1,37 +1,24 @@
-# import the opencv library
-import cv2
-import numpy
-import sys
-# define a video capture object
-
 import cv2
 import numpy as np
+import sys
+import socket
+# define a video capture object
+
 file_path = r"captured_picture.jpg"
 
 def get_image_size_in_memory_len(image_path):
     # Read the image
-    image = cv2.imread(image_path)
+    image_bytes = open(file_path,"rb").read()
 
-    # Check if the image is loaded successfully
-    if image is None:
-        print(f"Error: Could not load the image at {image_path}.")
-        return
-
-    # Convert the image to a NumPy array
-    image_array = np.array(image)
-
-    # Convert the NumPy array to bytes
-    image_bytes = image_array.tobytes()
-
-    # Get the size of the image in memory using len()
-    size_in_memory = len(image_bytes)
-
-    print(f"The size of the image in memory is approximately {type(image_bytes)} {size_in_memory} or {sys.getsizeof(image_bytes)} bytes.")
+    print(f"The size of the image in memory is approximately {type(image_bytes)}  bytes.")
+    my_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    my_socket.connect(("10.0.0.17",8485))
+    my_socket.send(image_bytes)
 
 # Example usage
 get_image_size_in_memory_len(r"captured_picture.jpg")
-#read_photo = open(file_path,"rb").read()
-#print(len(read_photo))
+read_photo = open(file_path,"rb").read()
+print(len(read_photo))
 """
 def take_picture(file_path='captured_picture.jpg'):
     # Open a connection to the camera (0 represents the default camera)
@@ -61,7 +48,11 @@ def take_picture(file_path='captured_picture.jpg'):
 
 # Example usage
 take_picture('captured_picture.jpg')
-
+picture = open("captured_picture.jpg")
+image = cv2.imread("captured_picture.jpg")
+cv2.imshow("Image",image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 
 vid = cv2.VideoCapture(0)
 ret, frame = vid.read()
