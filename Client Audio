@@ -43,7 +43,7 @@ while True:
     size = len(data)
     #stream2.write(data)
     print(size)
-    client_socket.sendall(data)
+    client_socket.sendall(struct.pack(">L", size)+data)
 # Stop and close the stream
 stream.stop_stream()
 stream.close()
