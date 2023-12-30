@@ -34,13 +34,25 @@ stream = p.open(format=sample_format,
                     output=True)
 print("payload_size: {}".format(payload_size))
 while True:
-    
-    print(data)
+    while len(data) < payload_size:
+        print("Recv: {}".format(len(data)))
+        data += conn.recv(4096)
+
+    print("Done Recv: {}".format(len(data)))
+    packed_msg_size = data[:payload_size]
+    data = data[payload_size:]
+    msg_size = struct.unpack(">L", packed_msg_size)[0]
+    print("msg_size: {}".format(msg_size))
+    while len(data) < msg_size:
+        data += conn.recv(4096)
+    frame_data = data[:msg_size]
+    data = data[msg_size:]
+    print(data,frame_data)
     # Read data in chunks
 
     # Play the sound by writing the audio data to the stream
-    data = conn.recv(chunk) #probably works when receiving a different size like 4096 bytes
-    stream.write(data)
+    #data = conn.recv(chunk) #probably works when receiving a different size like 4096 bytes
+    stream.write(frame_data)
 
     # Close and terminate the stream
 
