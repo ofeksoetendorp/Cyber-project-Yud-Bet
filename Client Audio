@@ -14,7 +14,7 @@ fs = 44100  # Record at 44100 samples per second
 
 p = pyaudio.PyAudio()  # Create an interface to PortAudio
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('10.0.0.17', 8485))
+client_socket.connect(('10.0.0.8', 8486))
 connection = client_socket.makefile('wb')
 print('Recording')
 
