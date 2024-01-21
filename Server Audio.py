@@ -8,7 +8,7 @@ import zlib
 import pyaudio
 
 HOST=''
-PORT=8485
+PORT=8486
 chunk = 1024  # Record in chunks of 1024 samples
 sample_format = pyaudio.paInt16  # 16 bits per sample
 channels = 2
@@ -52,7 +52,8 @@ while True:
 
     # Play the sound by writing the audio data to the stream
     #data = conn.recv(chunk) #probably works when receiving a different size like 4096 bytes
-    stream.write(frame_data)
+    stream.write(frame_data) #Important to read the frame_data and not data because the audio is stored in the
+    #frame data and not in the data
 
     # Close and terminate the stream
 
