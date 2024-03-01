@@ -5,7 +5,7 @@ import socket
 import threading, wave, pyaudio, time, queue
 
 host_name = socket.gethostname()
-host_ip = socket.gethostbyname(host_name)
+host_ip = "10.0.0.22"#server ip address, sometimes can use socket.gethostbyname(host_name) but better to just do ipconfig
 print(host_ip)
 port = 9633
 # For details visit: www.pyshine.com
@@ -17,7 +17,7 @@ def audio_stream_UDP():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, BUFF_SIZE)
     p = pyaudio.PyAudio()
-    CHUNK = 10 * 1024
+    CHUNK = 1024#original code was 10 * 1024 but then the audio was less smooth
     stream = p.open(format=p.get_format_from_width(2),
                     channels=2,
                     rate=44100,
