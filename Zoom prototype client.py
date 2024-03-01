@@ -1,40 +1,38 @@
-import socket
-import cv2
 
-SERVERIP= "10.0.0.17"
-SERVERPORT = 8485
-def get_video(vid):
-    # define a video capture object
+# This is client code to receive video frames over UDP
+import cv2, imutils, socket
+import numpy as np
+import time
+import base64
 
-    ret, frame = vid.read()
+BUFF_SIZE = 65536
+client_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+client_socket.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,BUFF_SIZE)
+host_name = socket.gethostname()
+host_ip = socket.gethostbyname(host_name)
+print(host_ip)
+port = 9999
+message = b'Hello'
 
-    # Display the resulting frame
-    return (cv2.flip(frame, 1)).tobytes()
+client_socket.sendto(message,(host_ip,port))
+fps,st,frames_to_count,cnt = (0,0,20,0)
+while True:
+	packet,_ = client_socket.recvfrom(BUFF_SIZE)
+	data = base64.b64decode(packet,' /')
+	npdata = np.frombuffer(data,dtype=np.uint8)
+	frame = cv2.imdecode(npdata,1)
+	frame = cv2.putText(frame,'FPS: '+str(fps),(10,40),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
+	cv2.imshow("RECEIVING VIDEO",frame)
+	key = cv2.waitKey(1) & 0xFF
+	if key == ord('q'):
+		client_socket.close()
+		break
+	if cnt == frames_to_count:
+		try:
+			fps = round(frames_to_count/(time.time()-st))
+			st=time.time()
+			cnt=0
+		except:
+			pass
+	cnt+=1
 
-
-def main():
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((SERVERIP, SERVERPORT))  # IP could be 127.0.0.1 if local ip
-    #Maybe use threading to send video and also receive messages at the same time
-    vid = cv2.VideoCapture(0)
-    while (True):
-
-        # Capture the video frame
-        # by frame
-
-        client_socket.send(get_video(vid))  # Managed to mirror the video so it feels more natural
-
-        # the 'q' button is set as the
-        # quitting button you may use any
-        # desired button of your choice
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    # After the loop release the cap object
-    vid.release()
-    # Destroy all the windows
-    cv2.destroyAllWindows()
-
-    client_socket.close()
-
-main()
