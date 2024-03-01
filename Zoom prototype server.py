@@ -9,7 +9,7 @@ BUFF_SIZE = 65536
 server_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 server_socket.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,BUFF_SIZE)
 host_name = socket.gethostname()
-host_ip = socket.gethostbyname(host_name)
+host_ip = "10.0.0.10" #ip of server,sometimes socket.gethostbyname(host_name) works, but sometimes it gives the address that isn't over the network and it is better to just use ipconfig
 print(host_ip)
 port = 9999
 socket_address = (host_ip,port)
