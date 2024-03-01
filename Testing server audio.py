@@ -21,7 +21,7 @@ def audio_stream_UDP():
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, BUFF_SIZE)
 
     server_socket.bind((host_ip, (port)))
-    CHUNK = 1024#10 * 1024
+    CHUNK = 1024#original code was 10 * 1024 but then the audio was less smooth
     #wf = wave.open("temp.wav")
     p = pyaudio.PyAudio()
     print('server listening at', (host_ip, (port)), fs)#wf.getframerate())
