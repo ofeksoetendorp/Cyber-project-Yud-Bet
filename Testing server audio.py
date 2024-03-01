@@ -4,7 +4,7 @@ import socket
 import threading, wave, pyaudio, time
 
 host_name = socket.gethostname()
-host_ip = socket.gethostbyname(host_name)
+host_ip = "10.0.0.11"#server ip address, sometimes can use socket.gethostbyname(host_name) but better to just do ipconfig
 print(host_ip)
 port = 9633
 sample_format = pyaudio.paInt16  # 16 bits per sample
@@ -21,7 +21,7 @@ def audio_stream_UDP():
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, BUFF_SIZE)
 
     server_socket.bind((host_ip, (port)))
-    CHUNK = 10 * 1024
+    CHUNK = 1024#10 * 1024
     #wf = wave.open("temp.wav")
     p = pyaudio.PyAudio()
     print('server listening at', (host_ip, (port)), fs)#wf.getframerate())
