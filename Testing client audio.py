@@ -13,7 +13,7 @@ q = queue.Queue(maxsize=2000)
 
 
 def audio_stream_UDP():
-    BUFF_SIZE = 65536
+    BUFF_SIZE = 65536#Maybe reduce buffer size to reduce delay
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, BUFF_SIZE)
     p = pyaudio.PyAudio()
@@ -34,14 +34,22 @@ def audio_stream_UDP():
             frame, _ = client_socket.recvfrom(BUFF_SIZE)
             q.put(frame)
             print('Queue size...', q.qsize())
+            """Maybe should move these lines to lines 42,49 (into the other infinite while loop) like seen below to avoid errors of reading and writing
+            to the queue at the same time. Could be better, just something to think about"""
 
     t1 = threading.Thread(target=getAudioData, args=())
     t1.start()
     #time.sleep(5)
     print('Now Playing...')
+    """frame, _ = client_socket.recvfrom(BUFF_SIZE)
+    q.put(frame)
+    print('Queue size...', q.qsize())"""
     while True:
         frame = q.get()
         stream.write(frame)
+        """frame, _ = client_socket.recvfrom(BUFF_SIZE)
+            q.put(frame)
+            print('Queue size...', q.qsize())"""
 
     client_socket.close()
     print('Audio closed')
