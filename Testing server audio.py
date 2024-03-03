@@ -4,7 +4,7 @@ import socket
 import threading, wave, pyaudio, time
 
 host_name = socket.gethostname()
-host_ip = "10.0.0.11"#server ip address, sometimes can use socket.gethostbyname(host_name) but better to just do ipconfig
+host_ip = "10.76.104.239"#server ip address, sometimes can use socket.gethostbyname(host_name) but better to just do ipconfig
 print(host_ip)
 port = 9633
 sample_format = pyaudio.paInt16  # 16 bits per sample
@@ -16,7 +16,7 @@ print('Recording')
 # For details visit: www.pyshine.com
 
 def audio_stream_UDP():
-    BUFF_SIZE = 65536
+    BUFF_SIZE = 65536 #Maybe reduce buffer size to reduce delay
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, BUFF_SIZE)
 
