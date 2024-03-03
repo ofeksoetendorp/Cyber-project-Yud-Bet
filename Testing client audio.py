@@ -5,7 +5,7 @@ import socket
 import threading, wave, pyaudio, time, queue
 
 host_name = socket.gethostname()
-host_ip = "10.0.0.22"#server ip address, sometimes can use socket.gethostbyname(host_name) but better to just do ipconfig
+host_ip = "10.0.0.19"#server ip address, sometimes can use socket.gethostbyname(host_name) but better to just do ipconfig
 print(host_ip)
 port = 9633
 # For details visit: www.pyshine.com
@@ -13,7 +13,7 @@ q = queue.Queue(maxsize=2000)
 
 
 def audio_stream_UDP():
-    BUFF_SIZE = 65536#Maybe reduce buffer size to reduce delay
+    BUFF_SIZE = 65536#Maybe reduce buffer size to reduce delay - answer - only seems to make more problems
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, BUFF_SIZE)
     p = pyaudio.PyAudio()
