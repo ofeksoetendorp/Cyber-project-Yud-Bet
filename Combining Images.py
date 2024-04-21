@@ -25,23 +25,34 @@ def stitch_images(image_paths, output_path, text_list=None, target_height=None, 
     if target_width is None:
         target_width = total_width // len(image_paths)
 
-    # Resize images to have equal height and width
-    resized_images = [resize_image(img, target_height, target_width) for img in images]
+    # Calculate the number of rows and columns for the grid
+    num_images = len(image_paths)
+    num_rows = int(np.sqrt(num_images))
+    num_cols = (num_images + num_rows - 1) // num_rows  # Calculate number of columns such that each row but the last is filled
 
-    # Add text to each image
-    if text_list is not None:
-        for img, text in zip(resized_images, text_list):
-            add_text_to_image(img, text)
+    # Resize images to fit into grid cells
+    resized_images = []
+    for img in images:
+        resized_img = resize_image(img, target_height, target_width)
+        resized_images.append(resized_img)
 
     # Create a blank canvas for stitching images
-    stitched_image = np.zeros((target_height, total_width, 3), dtype=np.uint8)
+    stitched_height = num_rows * target_height
+    stitched_width = num_cols * target_width
+    stitched_image = np.zeros((stitched_height, stitched_width, 3), dtype=np.uint8)
 
     # Paste resized images onto the canvas
-    x_offset = 0
-    for img in resized_images:
-        h, w = img.shape[:2]
-        stitched_image[:h, x_offset:x_offset + w] = img
-        x_offset += w
+    row = 0
+    col = 0
+    for img, text in zip(resized_images, text_list):
+        if col == num_cols:
+            col = 0
+            row += 1
+        y_offset = row * target_height
+        x_offset = col * target_width
+        stitched_image[y_offset:y_offset + target_height, x_offset:x_offset + target_width] = img
+        add_text_to_image(stitched_image, text, position=(x_offset + 10, y_offset + 30))  # Add text to the bottom left corner of each cell
+        col += 1
 
     # Resize the stitched image to the final specified size
     if final_height is not None and final_width is not None:
@@ -52,7 +63,7 @@ def stitch_images(image_paths, output_path, text_list=None, target_height=None, 
     print("Stitched image saved to:", output_path)
 
 # Example usage:
-image_paths = ["image1.jpg", "image2.jpg", "image3.jpg"]  # Replace with your image paths
-text_list = ["Name 1", "Name 2", "Name 3"]  # Replace with your text list
+image_paths = ["image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg", "image7.jpg","image6.jpg","image8.jpg","image9.jpg","image10.jpg","image11.jpg"]  # Replace with your image paths
+text_list = ["Name 1", "Name 2", "Name 3", "Name 4", "Name 7","Name 6","Name 8","Name 9","Name 10","Name 11"]  # Replace with your text list
 output_path = "stitched_image.jpg"  # Replace with your desired output path
-stitch_images(image_paths, output_path, text_list=text_list, target_height=300, target_width=600, final_height=600, final_width=4000)  # Replace with desired dimensions
+stitch_images(image_paths, output_path, text_list=text_list, target_height=300, target_width=400)  # Replace with desired dimensions
