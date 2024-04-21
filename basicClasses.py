@@ -5,8 +5,14 @@ import cv2
 import numpy as np
 import time
 import imutils
+import pyaudio
 import abc
 BUFF_SIZE = 65536
+CHUNK = 1024  # original code was 10 * 1024 but then the audio was less smooth
+CHANNELS = 2
+RATE = 44100
+OUTPUT = True
+FRAMES_PER_BUFFER = CHUNK
 #maybe add virtual class for socket classes with the basic functions that are shared
 # by the server,client classes
 #Make all attributes protected or private
@@ -17,7 +23,22 @@ BUFF_SIZE = 65536
 #Maybe make instances of VideoServer,AudioServer static (singleton) so there will only be 1 instance of them
 #Vid needs to be an attribute of VideoServer Class
 #Maybe in close function of Server add disconnecting from each client also (maybe in the other socket for RTCP)
+#Create main loop function for both Client and Server class in a way that their children won't have to rewrite it.
+#Maybe add class for Audio and audio server,client will inherit it as well as Client,Server class
+#Maybe make it so every server class has a list of Client Class, and that each client has a name, and each Server has it's own password which is a private attribute
+#When connecting the chat to the other code note that the way currently to disconnect is press q, but we want it to be to press on some close button or type exit (we want to be able to use q for something other that exiting).
+#Maybe in the chat get the password from a and not directly written in the python file. That way it's more safe
+#Maybe add an exception class
+#For sending video, first check that you can add name(text) when it is sent by the server code right now
 
+
+#You didn't handle it on the server side and didn't send a message from the server when a client disconnected. Also, the program doesn't stop on the client side when the user inputs exit. ALso printing order still weird.
+#Add else case that will be error for server handle client function
+#Make sure that you can select the password as the server and that it isn't always the word password
+#Maybe when the system message is that you are connecting, don't print it
+#Removing last line in handle_client server code seems to help - nevermind now
+#Add UI to the chat.Also copy ti into chatclient,chatserver
+#Printing order in client side
 
 class Socket(abc.ABC):
     @abc.abstractmethod
@@ -127,7 +148,34 @@ class VideoClient(Client):
 
 
 class AudioClient(Client):
-    pass
+    def __init__(self, server_ip, port):
+        Client.__init__(self, server_ip, port)
+        self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
+
+    def _handle_data(self, data):
+        data = base64.b64decode(data, ' /')
+        npdata = np.frombuffer(data, dtype=np.uint8)
+        frame = cv2.imdecode(npdata, 1)
+        frame = cv2.putText(frame, 'FPS: ' + str(self._fps), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        # Maybe make these measurements constant variables
+        cv2.imshow("RECEIVING VIDEO", frame)
+
+    def handle_server(self):
+        while True:
+            data = self._receive_data()
+            self._handle_data(data)
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                self._close()
+                break
+            if self._cnt == self._frames_to_count:
+                try:
+                    self._fps = round(self._frames_to_count / (time.time() - self._st))
+                    self._st = time.time()
+                    self._cnt = 0
+                except:
+                    pass
+            self._cnt += 1
 
 
 class VideoServer(Server):
@@ -173,6 +221,14 @@ class VideoServer(Server):
                 except:
                     pass
             self._cnt += 1
+
+
+class Audio(abc.ABC):
+    def __init__(self):
+        self._ p = pyaudio.PyAudio()
+
+
+
 class AudioServer(Server):
     pass
 # Example usage:
