@@ -427,6 +427,7 @@ class ChatServer(ServerSocket):
                         response = {"type": "ACK", "payload": "Password verified. Send your username."}
                         self._send_message(client_socket, response)
                     else:
+                        username = ["Error"]  # "Error".Make this the username so that no user can actually usr this but also it passed the test of not being None
                         response = {"type": "ERR", "payload": "Invalid password. Connection closed."}
                         self._send_message(client_socket, response)
                         return
@@ -451,8 +452,9 @@ class ChatServer(ServerSocket):
             # If client disconnects, remove from clients dictionary and broadcast the departure
             if username:
                 del self._clients[client_socket]
-                self._send_notification(f"User '{username}' left the chat.")
-                # send_remaining_clients(f"User '{username}' left the chat.")
+                if username != ["Error"]:
+                    self._send_notification(f"User '{username}' left the chat.")
+                    # send_remaining_clients(f"User '{username}' left the chat.")
             client_socket.close()  # Removing this line seems to work.Nevermind.
 
     def _send_notification(self,notification_message):
@@ -511,7 +513,7 @@ class Client:
     def __init__(self,server_ip, port):
         self._chat_client = chatClient
         generator = self._chatClient.main()
-        valid = next(verified,None)
+        valid = next(generator,None)
 
         if not valid:
             exit()
