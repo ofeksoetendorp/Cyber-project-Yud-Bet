@@ -1,46 +1,155 @@
-
-# This is server code to send video frames over UDP
-import cv2, imutils, socket
+from basicClasses import ServerSocket
+import base64
+import cv2
 import numpy as np
 import time
-import base64
+import imutils
+import threading
+#Need to add threading here
+#How to handle client trying to disconnect correctly
+#Maybe should open combinedpicture here to see what's going on
+#How to handle case where client tries to connect with a message that isn't exit or pic
 
-BUFF_SIZE = 65536
-server_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-server_socket.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,BUFF_SIZE)
-host_name = socket.gethostname()
-host_ip = "10.0.0.10" #ip of server,sometimes socket.gethostbyname(host_name) works, but sometimes it gives the address that isn't over the network and it is better to just use ipconfig
-print(host_ip)
-port = 9999
-socket_address = (host_ip,port)
-server_socket.bind(socket_address)
-print('Listening at:',socket_address)
 
-vid = cv2.VideoCapture(0) #  replace 'rocket.mp4' with 0 for webcam
-fps,st,frames_to_count,cnt = (0,0,20,0)
+class VideoServer(ServerSocket):
+    _TARGET_HEIGHT = 300
+    _TARGET_WIDTH = 500
+    _FINAL_HEIGHT = 500
+    _FINAL_WIDTH = 1000
 
-while True:
-	msg,client_addr = server_socket.recvfrom(BUFF_SIZE)
-	print('GOT connection from ',client_addr)
-	WIDTH=400
-	while(vid.isOpened()):
-		_,frame = vid.read()
-		frame = imutils.resize(frame,width=WIDTH)
-		encoded,buffer = cv2.imencode('.jpg',frame,[cv2.IMWRITE_JPEG_QUALITY,80])
-		message = base64.b64encode(buffer)
-		server_socket.sendto(message,client_addr)
-		frame = cv2.putText(frame,'FPS: '+str(fps),(10,40),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
-		cv2.imshow('TRANSMITTING VIDEO',frame)
-		key = cv2.waitKey(1) & 0xFF
-		if key == ord('q'):
-			server_socket.close()
-			break
-		if cnt == frames_to_count:
-			try:
-				fps = round(frames_to_count/(time.time()-st))
-				st=time.time()
-				cnt=0
-			except:
-				pass
-		cnt+=1
+    def __init__(self, server_ip, port):
+        ServerSocket.__init__(self, server_ip, port)
+        #self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
+        self._images = {}#Key will be address and value will be the most recent image from the client
+
+    def _resize_image(self,img, target_height, target_width):
+        return cv2.resize(img, (target_width, target_height))
+
+    def _combine_images(self,images,target_height=VideoServer._TARGET_HEIGHT, target_width=VideoServer._TARGET_WIDTH, final_height=VideoServer._FINAL_HEIGHT, final_width=VideoServer._FINAL_WIDTH):
+        max_height = 0
+        total_width = 0
+
+        # Load images and find the maximum height and total width
+        for img in images:
+            max_height = max(max_height, img.shape[0])
+            total_width += img.shape[1]
+
+        # If target height or width is not specified, use the maximum height and width of the input images
+        if target_height is None:
+            target_height = max_height
+        if target_width is None:
+            target_width = total_width // len(images)
+
+        # Calculate the number of rows and columns for the grid
+        num_images = len(images)
+        num_rows = int(np.sqrt(num_images))
+        num_cols = (num_images + num_rows - 1) // num_rows  # Calculate number of columns such that each row but the last is filled
+
+        # Resize images to fit into grid cells
+        resized_images = []
+        for img in images:
+            resized_img = self._resize_image(img, target_height, target_width)
+            resized_images.append(resized_img)
+
+        # Create a blank canvas for stitching images
+        stitched_height = num_rows * target_height
+        stitched_width = num_cols * target_width
+        stitched_image = np.zeros((stitched_height, stitched_width, 3), dtype=np.uint8)
+
+        # Paste resized images onto the canvas
+        row = 0
+        col = 0
+        for img in resized_images:
+            if col == num_cols:
+                col = 0
+                row += 1
+            y_offset = row * target_height
+            x_offset = col * target_width
+            stitched_image[y_offset:y_offset + target_height, x_offset:x_offset + target_width] = img
+            col += 1
+
+        # Resize the stitched image to the final specified size
+        if final_height is not None and final_width is not None:
+            stitched_image = self._resize_image(stitched_image, final_height, final_width)
+        # Save the stitched image
+        return stitched_image
+
+
+    def _decrypt_data(self,data):
+        #data = base64.b64decode(data, ' /')
+        npdata = np.frombuffer(data, dtype=np.uint8)
+        frame = cv2.imdecode(npdata, 1)
+        return frame
+        #Maybe make these measurements constant variables
+
+    def _process_frame(self,frame):
+        encoded, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+        #self._add_text_to_image(buffer) - doesn't work when the line is here, but does work in _get_data
+        message = base64.b64encode(buffer)
+        return message
+
+    def _send_to_client(self,data,client_addr):
+        frame = data
+        message = self._process_frame(frame)
+        self._my_socket.sendto(message, client_addr)
+        return frame
+
+    def _handle_client(self):
+        data = None
+        try:
+            while True:
+                # Receive message from client
+                data,client_addr = self._recv()
+                if not data:
+                    break
+
+                # Decrypt and decode message
+                data = base64.b64decode(data, ' /')
+                if data == "EXIT":
+                    print(f"User disconnected from {client_addr}")
+                    break  # Exit loop and close connection
+                else:
+                    decrypted_data = self._decrypt_data(data)
+                    self._clients.append(client_addr)
+                    self._images[client_addr] = decrypted_data(data)
+
+                # Add else case that will be error
+        finally:
+            # If client disconnects, remove from clients dictionary and broadcast the departure
+            if data:
+                if client_addr in self._clients:
+                    self._clients.remove(client_addr)
+                if client_addr in self._images.keys():
+                    del self._images[client_addr]
+
+    # def send_remaining_clients(message):
+    #    for client_socket, _ in clients.items():
+    #        send_message(client_socket, {"type": "SYS", "payload": message})
+
+    def _send_broadcast_messages(self):
+        while True:
+            if self._images:
+                # Broadcast message to all connected clients
+                combined_image = self._combine_images(self._images)
+                for client_addr in self._clients.items():
+                    self._send_to_client(combined_image,client_addr)
+
+
+
+    def main(self):
+        self.start()
+        #self.connect()
+        # Start a thread to broadcast messages to clients
+        broadcast_thread = threading.Thread(target=self._send_broadcast_messages)
+        broadcast_thread.start()
+
+        #while True:
+            #address = self.connect()
+
+            # Start a new thread to handle the client
+            #client_thread = threading.Thread(target=self._handle_client)
+            #client_thread.start()
+        client_thread = threading.Thread(target=self._handle_client)
+        client_thread.start()
+
 
