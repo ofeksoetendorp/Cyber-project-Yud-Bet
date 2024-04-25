@@ -9,7 +9,10 @@ import threading
 #How to handle client trying to disconnect correctly
 #Maybe should open combinedpicture here to see what's going on
 #How to handle case where client tries to connect with a message that isn't exit or pic
-
+#Maybe should add .decode somewhere
+#Maybe the check for Exit should be b"Exit" instead. Not sure how the message is passed
+#Split code into parts
+#Maybe using copy function on self.images.values is better than sendung them as they are to the function combineimages
 
 class VideoServer(ServerSocket):
     _TARGET_HEIGHT = 300
@@ -25,12 +28,15 @@ class VideoServer(ServerSocket):
     def _resize_image(self,img, target_height, target_width):
         return cv2.resize(img, (target_width, target_height))
 
-    def _combine_images(self,images,target_height=VideoServer._TARGET_HEIGHT, target_width=VideoServer._TARGET_WIDTH, final_height=VideoServer._FINAL_HEIGHT, final_width=VideoServer._FINAL_WIDTH):
+    def _combine_images(self,images,target_height, target_width, final_height, final_width):
         max_height = 0
         total_width = 0
 
         # Load images and find the maximum height and total width
         for img in images:
+            print("_combine_images type = ",type(img))
+            if type(img) == tuple:
+                print(img)
             max_height = max(max_height, img.shape[0])
             total_width += img.shape[1]
 
@@ -105,13 +111,16 @@ class VideoServer(ServerSocket):
 
                 # Decrypt and decode message
                 data = base64.b64decode(data, ' /')
-                if data == "EXIT":
+                if data == "EXIT": #Maybe should be b"Exit"
                     print(f"User disconnected from {client_addr}")
                     break  # Exit loop and close connection
+                #elif data maybe handle case client sends hello
                 else:
                     decrypted_data = self._decrypt_data(data)
-                    self._clients.append(client_addr)
-                    self._images[client_addr] = decrypted_data(data)
+                    print("_handle_client type = ",type(decrypted_data))
+                    if client_addr not in  self._clients:
+                        self._clients.append(client_addr)
+                    self._images[client_addr] = decrypted_data
 
                 # Add else case that will be error
         finally:
@@ -130,8 +139,9 @@ class VideoServer(ServerSocket):
         while True:
             if self._images:
                 # Broadcast message to all connected clients
-                combined_image = self._combine_images(self._images)
-                for client_addr in self._clients.items():
+                images_copy = list(self._images.values()).copy() #This may be better that just sending the values to the function directly
+                combined_image = self._combine_images(images_copy,VideoServer._TARGET_HEIGHT,VideoServer._TARGET_WIDTH,VideoServer._FINAL_HEIGHT,VideoServer._FINAL_WIDTH)#self._combine_images(self._images.values(),VideoServer._TARGET_HEIGHT,VideoServer._TARGET_WIDTH,VideoServer._FINAL_HEIGHT,VideoServer._FINAL_WIDTH)
+                for client_addr in self._clients:
                     self._send_to_client(combined_image,client_addr)
 
 
