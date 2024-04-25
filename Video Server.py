@@ -13,6 +13,8 @@ import threading
 #Maybe the check for Exit should be b"Exit" instead. Not sure how the message is passed
 #Split code into parts
 #Maybe using copy function on self.images.values is better than sendung them as they are to the function combineimages
+#Handle clients disconnecting
+#Maybe the problem is that the client socket is closed after it sends the final message and before the server receives the message, which may be problematic
 
 class VideoServer(ServerSocket):
     _TARGET_HEIGHT = 300
@@ -108,17 +110,17 @@ class VideoServer(ServerSocket):
                 data,client_addr = self._recv()
                 if not data:
                     break
-
-                # Decrypt and decode message
-                data = base64.b64decode(data, ' /')
-                if data == "EXIT": #Maybe should be b"Exit"
+                if data == b"Exit": #Maybe should be b"Exit"
                     print(f"User disconnected from {client_addr}")
                     break  # Exit loop and close connection
+
+                # Decrypt and decode message
                 #elif data maybe handle case client sends hello
                 else:
+                    data = base64.b64decode(data, ' /')
                     decrypted_data = self._decrypt_data(data)
                     print("_handle_client type = ",type(decrypted_data))
-                    if client_addr not in  self._clients:
+                    if client_addr not in self._clients:
                         self._clients.append(client_addr)
                     self._images[client_addr] = decrypted_data
 
