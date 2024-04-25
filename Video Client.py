@@ -9,7 +9,9 @@ import threading
 #Very likely that program tries to call destructor twice. Handle it. Maybe like we did in chat
 #Maybe should add .decode somewhere
 #Do both threads end? what to do to close? will the destructor be enough
-
+#Maybe on the client size do resize using cv2.resize and not imutils
+#Handle clients disconnecting
+#Maybe the problem is that the client socket is closed after it sends the final message and before the server receives the message, which may be problematic
 class VideoClient(ClientSocket):
     _WIDTH = 400
 
