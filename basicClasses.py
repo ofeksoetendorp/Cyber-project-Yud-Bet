@@ -45,6 +45,16 @@ MAX_CLIENTS = 50 #Maybe not necessary
 #Write chatClient,chatServer as classes. Then write final class, and find some way to get the names to the client/server classes of tje video class
 #What to do with chat server clients variable? Maybe make just basic class dictionary, or maybe make a change in the server code somehow
 #Add self and make all funcs protected chat server
+#When disconnecting from chat we want to disconnect the rest of the program (videoclient,audioclient).Maybe use command to close program and use destructor to end nicely
+#Write destructor for all the classes
+#Maybe adjust size of images on client size to decrease size of each image, and then resize it on server side
+#Maybe the size of the final image the server sends should be the same but the size of the pics in it changes based on the amount of clients
+#Maybe resize pics again for the client so that it fits well on the screen.Need to get screen width and height
+#Decide what to do with the current client image resize that is happeninng right now
+#What to do if someone doesn't have a camera? Not include him, or is it beyond the scope of the project
+#Maybe these values should be const self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
+##How to handle client trying to disconnect correctly in video,audio classes
+#Do you need to bind client socket? If so make necessary changes. Also do we need to send hello and if so how to handle it
 
 #You didn't handle it on the server side and didn't send a message from the server when a client disconnected. Also, the program doesn't stop on the client side when the user inputs exit. ALso printing order still weird.
 #Add else case that will be error for server handle client function
@@ -70,7 +80,7 @@ class Socket(abc.ABC):
             pass
             #error"Socket must be either tcp or udp"
 
-    def _connect(self):
+    def connect(self):
         pass
 
     def _close(self):
@@ -107,14 +117,18 @@ class ServerSocket(Socket):
 
     def connect(self):#Maybe should be protected and instead used in a function like main loop
         if self._socket_type == "udp":
-            msg, client_addr = self._my_socket.recvfrom(BUFF_SIZE)
+            msg, client_addr = self._recv()
             self._clients.append(client_addr)
             print('GOT connection from ', client_addr, msg)  # Maybe remove message from here
+            return client_addr
         elif self._socket_type == "tcp":
             client_socket, client_addr = self._my_socket.accept()
             print("Connection from:", client_addr)
             self._clients[client_socket] = ("Currently no name entered", client_addr)
             return client_socket,client_addr
+
+    def _recv(self):
+        return self._my_socket.recvfrom(BUFF_SIZE)
 """"
     @abc.abstractmethod
     def _get_data(self):
@@ -135,8 +149,10 @@ class ClientSocket(Socket):
 
     def connect(self): #Maybe should be protected and instead used in a function like main loop
         if self._socket_type == "udp":
-            message = b'Hello'
-            self._my_socket.sendto(message, (self._server_ip, self._port))
+            #message = b'Hello'
+            #self._my_socket.sendto(message, (self._server_ip, self._port))
+            #Maybe sending hello is necessary
+            self._my_socket.bind(("10.0.0.16", 8888)) #Obviously this is temporary and may have to change
         elif self._socket_type == "tcp":
             self._my_socket.connect((self._server_ip, self._port))
         #connect to server. Maybe add a way to check if the data that is received is from the
@@ -521,6 +537,8 @@ class Client:
             self._video_client = VideoClient(server_ip, port,self._chatClient.getName())
             self._audio_client = AudioClient(server_ip, port)
             next(generator,None)
+            #Once user decides to exit chat, all the other threads must end.Potential options: global variable which once the chatClient ends it executed closing all the other threads
+            #Another option is like clientChat main function closing the threads in the same way.Write destructors for all the classes
             threads
 
     def
