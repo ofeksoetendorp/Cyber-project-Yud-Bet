@@ -14,12 +14,14 @@ import time
 #Handle clients disconnecting
 #Maybe the problem is that the client socket is closed after it sends the final message and before the server receives the message, which may be problematic
 # Maybe add closethreads set function so that when chat ends the rest can be closed easily as well
-
+#bind client make better
+#Maybe you can change it so that instead of just one key, if you enter "exit" it will end
+#Since both of the displaying parts of the code access the same self._ variables it is possible there may be error in the values there. Also they are very similar so maybe should create a function for them.
 class VideoClient(ClientSocket):
     _WIDTH = 400
 
-    def __init__(self, server_ip, port,name):
-        ClientSocket.__init__(self, server_ip, port)
+    def __init__(self, server_ip, server_port,client_ip,client_port, name):
+        ClientSocket.__init__(self, server_ip, server_port,client_ip,client_port)
         self._name = name
         self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
         self._vid = cv2.VideoCapture(0) #This linr should maybe move to connect function
@@ -28,7 +30,7 @@ class VideoClient(ClientSocket):
 
     def __del__(self):
         print("deleting video client")
-        self._my_socket.sendto(b"Exit", (self._server_ip, self._port))
+        self._my_socket.sendto(b"Exit", (self._server_ip, self._server_port))
         self._vid.release()
         self._close()
 
@@ -45,7 +47,7 @@ class VideoClient(ClientSocket):
             data = self._receive_data()
             self._handle_data_from_server(data)
             key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):
+            if key == ord('q'):#Maybe you can change it so that instead of just one key, if you enter "exit" it will end
                 self._close_threads = True
                 break #This line may be unnecessary
             if self._cnt == self._frames_to_count:
@@ -75,7 +77,7 @@ class VideoClient(ClientSocket):
     def _send_to_server(self,data):
         frame = data
         message = self._process_frame(frame)
-        self._my_socket.sendto(message, (self._server_ip, self._port))
+        self._my_socket.sendto(message, (self._server_ip, self._server_port))
         return frame
 
     def _handle_sending_to_server(self):
@@ -86,7 +88,7 @@ class VideoClient(ClientSocket):
             frame = cv2.putText(frame, 'FPS: ' + str(self._fps), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
             cv2.imshow('TRANSMITTING VIDEO', frame)
             key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):
+            if key == ord('q'):#Maybe you can change it so that instead of just one key, if you enter "exit" it will end
                 self._close_threads = True
                 break  # This line may be unnecessary
             if self._cnt == self._frames_to_count:
