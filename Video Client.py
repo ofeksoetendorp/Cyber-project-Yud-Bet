@@ -5,6 +5,7 @@ import numpy as np
 import time
 import imutils
 import threading
+import time
 #Need to add threading here
 #Very likely that program tries to call destructor twice. Handle it. Maybe like we did in chat
 #Maybe should add .decode somewhere
@@ -12,6 +13,8 @@ import threading
 #Maybe on the client size do resize using cv2.resize and not imutils
 #Handle clients disconnecting
 #Maybe the problem is that the client socket is closed after it sends the final message and before the server receives the message, which may be problematic
+# Maybe add closethreads set function so that when chat ends the rest can be closed easily as well
+
 class VideoClient(ClientSocket):
     _WIDTH = 400
 
@@ -19,9 +22,12 @@ class VideoClient(ClientSocket):
         ClientSocket.__init__(self, server_ip, port)
         self._name = name
         self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
-        self._vid = cv2.VideoCapture(0)
+        self._vid = cv2.VideoCapture(0) #This linr should maybe move to connect function
+        self._close_threads = False
+        #Maybe add closethreads set function so that when chat ends the rest can be closed easily as well
 
     def __del__(self):
+        print("deleting video client")
         self._my_socket.sendto(b"Exit", (self._server_ip, self._port))
         self._vid.release()
         self._close()
@@ -35,13 +41,13 @@ class VideoClient(ClientSocket):
         cv2.imshow("RECEIVING VIDEO", frame)
 
     def _handle_server_receptions(self):
-        while True:
+        while not self._close_threads:
             data = self._receive_data()
             self._handle_data_from_server(data)
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
-                self._close()
-                break
+                self._close_threads = True
+                break #This line may be unnecessary
             if self._cnt == self._frames_to_count:
                 try:
                     self._fps = round(self._frames_to_count / (time.time() - self._st))
@@ -73,7 +79,7 @@ class VideoClient(ClientSocket):
         return frame
 
     def _handle_sending_to_server(self):
-        while self._vid.isOpened():
+        while self._vid.isOpened() and (not self._close_threads):
             frame = self._get_frame()
             frame = imutils.resize(frame, width=VideoClient._WIDTH)
             self._send_to_server(frame)
@@ -81,8 +87,8 @@ class VideoClient(ClientSocket):
             cv2.imshow('TRANSMITTING VIDEO', frame)
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
-                self._close()
-                break
+                self._close_threads = True
+                break  # This line may be unnecessary
             if self._cnt == self._frames_to_count:
                 try:
                     self._fps = round(self._frames_to_count / (time.time() - self._st))
@@ -112,5 +118,6 @@ class VideoClient(ClientSocket):
                 threads_closed = False
         if threads_closed:
             #self._close()
+            #Maybe should call destructor
             pass
 
