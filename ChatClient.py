@@ -3,91 +3,101 @@ import json
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import threading
+from basicClasses import ClientSocket
 # Encryption key (must be 16 bytes long)
-key = b'This is a key!!!'  # 16 bytes
+class ChatClient(ClientSocket):
+    _KEY = b'This is a key!!!'  # 16 bytes
 
-def send_message(sock, message_type, payload):
-    message = {"type": message_type, "payload": payload}
-    serialized_message = json.dumps(message)
-    encrypted_message = encrypt_message(serialized_message)
-    sock.send(encrypted_message)
+    def __init__(self, server_ip, server_port):
+        ClientSocket.__init__(self, server_ip, server_port, socket_type="tcp")
+        self._name = input("Enter your username: ")
 
-def receive_message(sock):
-    data = sock.recv(1024)
-    decrypted_data = decrypt_message(data)
-    return json.loads(decrypted_data)
+    def get_name(self):
+        return self._name
 
-def encrypt_message(message):
-    cipher = AES.new(key, AES.MODE_CBC)
-    padded_message = pad(message.encode(), AES.block_size)
-    encrypted_message = cipher.iv + cipher.encrypt(padded_message)
-    return encrypted_message
 
-def decrypt_message(encrypted_message):
-    cipher = AES.new(key, AES.MODE_CBC, encrypted_message[:16])
-    decrypted_message = unpad(cipher.decrypt(encrypted_message[16:]), AES.block_size)
-    return decrypted_message.decode()
+    def _send_message(self, message_type, payload):
+        message = {"type": message_type, "payload": payload}
+        serialized_message = json.dumps(message)
+        encrypted_message = self._encrypt_message(serialized_message)
+        self._my_socket.send(encrypted_message)
 
-def receive_messages(sock):
-    while True:
-        message = receive_message(sock)
-        message_type = message.get("type")
-        if message_type == "MSG":
-            print("" + message["payload"])
-        elif message_type == "SYS":
-            print("[System]:", message["payload"])
-        elif message_type == "ACK":
-            print("[System]:", message["payload"])
-            break
+    def _receive_message(self):
+        data = self._my_socket.recv(1024)
+        decrypted_data = self._decrypt_message(data)
+        return json.loads(decrypted_data)
 
-def send_messages(sock):
-    while True:
-        message = input("Enter your message (type 'exit' to quit): ")
-        if message.lower() == "exit":
-            send_message(sock, "EXIT", "exit")
-            break
-        if len(json.dumps({"type": "MSG", "payload": message})) > 1024:
-            print("Message too long. Please send a shorter message.")
-            continue
-        send_message(sock, "MSG", message)
+    def _encrypt_message(self,message):
+        cipher = AES.new(self._KEY, AES.MODE_CBC)
+        padded_message = pad(message.encode(), AES.block_size)
+        encrypted_message = cipher.iv + cipher.encrypt(padded_message)
+        return encrypted_message
 
-def main():
-    host = "127.0.0.1"
-    port = 12345
-    threads = []
-    threads_closed = True
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((host, port))
+    def _decrypt_message(self,encrypted_message):
+        cipher = AES.new(self._KEY, AES.MODE_CBC, encrypted_message[:16])
+        decrypted_message = unpad(cipher.decrypt(encrypted_message[16:]), AES.block_size)
+        return decrypted_message.decode()
 
-    # Send password to server
-    password = input("Enter your password: ")
-    send_message(client_socket, "PWD", password)
+    def _receive_messages(self):
+        while True:
+            message = self._receive_message()
+            message_type = message.get("type")
+            if message_type == "MSG":
+                print("" + message["payload"])
+            elif message_type == "SYS":
+                print("[System]:", message["payload"])
+            elif message_type == "ACK":
+                print("[System]:", message["payload"])
+                break
 
-    # Receive verification message from server
-    verification_message = receive_message(client_socket)
-    print(verification_message)
+    def _send_messages(self):
+        while True:
+            message = input("Enter your message (type 'exit' to quit): ")
+            if message.lower() == "exit":
+                self._send_message("EXIT", "exit")
+                break
+            if len(json.dumps({"type": "MSG", "payload": message})) > 1024:
+                print("Message too long. Please send a shorter message.")
+                continue
+            self._send_message("MSG", message)
 
-    # If password is verified, send username
-    if "Password verified" in verification_message["payload"]:
-        username = input("Enter your username: ")
-        send_message(client_socket, "USR", username)
+    def start(self):
+        self.connect()
 
-        # Start threads for sending and receiving messages
-        receive_thread = threading.Thread(target=receive_messages, args=(client_socket,))
-        send_thread = threading.Thread(target=send_messages, args=(client_socket,))
-        threads.append(receive_thread)
-        threads.append(send_thread)
-        receive_thread.start()
-        send_thread.start()
+        # Send password to server
+        password = input("Enter your password: ")
+        self._send_message("PWD", password)
 
-        # Wait for both threads to finish
-        receive_thread.join()
-        send_thread.join()
-    for thread in threads:
-        if thread.is_alive():
-            threads_closed = False
-    if threads_closed:
-        client_socket.close()
+        # Receive verification message from server
+        verification_message = self._receive_message()
+        print(verification_message)
+        if "Password verified" in verification_message["payload"]:
+            return True
+        return False
 
-if __name__ == "__main__":
-    main()
+    def main(self):
+
+        threads = []
+        threads_closed = True
+        verified = self.start()
+        yield verified
+        if verified:
+
+            self._send_message("USR", self._name)
+
+            # Start threads for sending and receiving messages
+            receive_thread = threading.Thread(target=self._receive_messages)
+            send_thread = threading.Thread(target=self._send_messages,)
+            threads.append(receive_thread)
+            threads.append(send_thread)
+            receive_thread.start()
+            send_thread.start()
+
+            # Wait for both threads to finish
+            receive_thread.join()
+            send_thread.join()
+        for thread in threads:
+            if thread.is_alive():
+                threads_closed = False
+        if threads_closed:
+            self._close()
