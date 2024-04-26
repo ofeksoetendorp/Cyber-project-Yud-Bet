@@ -60,6 +60,10 @@ MAX_CLIENTS = 50 #Maybe not necessary
 #Do you need to bind client socket? If so make necessary changes. Also do we need to send hello and if so how to handle it
 #First check chat on other device, then combine video and chat, and then rewrite audio and then combine all three
 #Clean up mess video both client and server and run on shahar's computer to check
+# Maybe client could have attribute name which will be passed to chatclient,videoclient
+#Add error class
+#Handle closing server video and others
+#Maybe add option of closing server video and others. Very similar to client disconnect probably
 
 #You didn't handle it on the server side and didn't send a message from the server when a client disconnected. Also, the program doesn't stop on the client side when the user inputs exit. ALso printing order still weird.
 #Add else case that will be error for server handle client function
@@ -246,6 +250,7 @@ class AudioServer(ServerSocket):
 """
 class Client:
     def __init__(self,server_ip, port):
+    #Maybe client could have attribute name which will be passed to chatclient,videoclient
         self._chat_client = chatClient
         generator = self._chatClient.main()
         valid = next(generator,None)
