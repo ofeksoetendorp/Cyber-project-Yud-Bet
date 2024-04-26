@@ -5,6 +5,8 @@ import threading
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from basicClasses import ServerSocket
+#How to get the message to the other sockets when user types exit to end
+#Add end server option
 class ChatServer(ServerSocket):
     _KEY = b'This is a key!!!'  # 16 bytes
     __PASSWORD = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
