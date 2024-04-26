@@ -18,14 +18,18 @@ import threading
 #Is it taking out the wrong guy(the one who sent the message before it? Is the exception working? Maybe we should use a flag on client side?
 #Why is it only an error when the same computer that runs the server tries to exit?
 #Is it wise to collapse the program knowing that it sometimes blames the wrong guy
+#Maybe open combined images here as well. Also clean up the mess from closing client
+#Handle closing server
+#Maybe add option of closing server. Very similar to client disconnect probably
+
 class VideoServer(ServerSocket):
     _TARGET_HEIGHT = 300
     _TARGET_WIDTH = 500
     _FINAL_HEIGHT = 500
     _FINAL_WIDTH = 1000
 
-    def __init__(self, server_ip, port):
-        ServerSocket.__init__(self, server_ip, port)
+    def __init__(self, server_ip, server_port):
+        ServerSocket.__init__(self, server_ip, server_port)
         #self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
         self._images = {}#Key will be address and value will be the most recent image from the client
 
@@ -130,28 +134,20 @@ class VideoServer(ServerSocket):
                             self._clients.append(client_addr)
                         self._images[client_addr] = decrypted_data
                 except:
-
+                    print("Error")
+                    """"#This may be actively harmful consudering when this is called
                     print("\nBad guy who disconnected = ",client_addr,f"\n number of clients = {len(self._clients)},number of images = {len(self._images)}\n")
                     if client_addr in self._clients:
                         self._clients.remove(client_addr)
                     if client_addr in self._images.keys():
                         del self._images[client_addr]
-                    print(f"\n number of clients = {len(self._clients)},number of images = {len(self._images)}\n")
-
+                    print(f"\n number of clients = {len(self._clients)},number of images = {len(self._images)}\n")"""
 
 
                 # Add else case that will be error
-        finally:
+        except:
+            print("Error")
             # If client disconnects, remove from clients dictionary and broadcast the departure
-            if data:
-                if client_addr in self._clients:
-                    self._clients.remove(client_addr)
-                if client_addr in self._images.keys():
-                    del self._images[client_addr]
-
-    # def send_remaining_clients(message):
-    #    for client_socket, _ in clients.items():
-    #        send_message(client_socket, {"type": "SYS", "payload": message})
 
     def _send_broadcast_messages(self):
         while True:
@@ -161,8 +157,6 @@ class VideoServer(ServerSocket):
                 combined_image = self._combine_images(images_copy,VideoServer._TARGET_HEIGHT,VideoServer._TARGET_WIDTH,VideoServer._FINAL_HEIGHT,VideoServer._FINAL_WIDTH)#self._combine_images(self._images.values(),VideoServer._TARGET_HEIGHT,VideoServer._TARGET_WIDTH,VideoServer._FINAL_HEIGHT,VideoServer._FINAL_WIDTH)
                 for client_addr in self._clients:
                     self._send_to_client(combined_image,client_addr)
-
-
 
     def main(self):
         self.start()
