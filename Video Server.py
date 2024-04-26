@@ -15,7 +15,9 @@ import threading
 #Maybe using copy function on self.images.values is better than sendung them as they are to the function combineimages
 #Handle clients disconnecting
 #Maybe the problem is that the client socket is closed after it sends the final message and before the server receives the message, which may be problematic
-
+#Is it taking out the wrong guy(the one who sent the message before it? Is the exception working? Maybe we should use a flag on client side?
+#Why is it only an error when the same computer that runs the server tries to exit?
+#Is it wise to collapse the program knowing that it sometimes blames the wrong guy
 class VideoServer(ServerSocket):
     _TARGET_HEIGHT = 300
     _TARGET_WIDTH = 500
@@ -36,9 +38,9 @@ class VideoServer(ServerSocket):
 
         # Load images and find the maximum height and total width
         for img in images:
-            print("_combine_images type = ",type(img))
-            if type(img) == tuple:
-                print(img)
+            #print("_combine_images type = ",type(img))
+            #if type(img) == tuple:
+            #    print(img)
             max_height = max(max_height, img.shape[0])
             total_width += img.shape[1]
 
@@ -107,22 +109,36 @@ class VideoServer(ServerSocket):
         try:
             while True:
                 # Receive message from client
-                data,client_addr = self._recv()
-                if not data:
-                    break
-                if data == b"Exit": #Maybe should be b"Exit"
-                    print(f"User disconnected from {client_addr}")
-                    break  # Exit loop and close connection
+                try:
+                    data,client_addr = self._recv()
+                    if not data:
+                        break
+                    if data == b"Exit": #Maybe should be b"Exit"
+                        print(f"User disconnected from {client_addr}")
+                        if client_addr in self._clients:
+                            self._clients.remove(client_addr)
+                        if client_addr in self._images.keys():
+                            del self._images[client_addr]
 
-                # Decrypt and decode message
-                #elif data maybe handle case client sends hello
-                else:
-                    data = base64.b64decode(data, ' /')
-                    decrypted_data = self._decrypt_data(data)
-                    print("_handle_client type = ",type(decrypted_data))
-                    if client_addr not in self._clients:
-                        self._clients.append(client_addr)
-                    self._images[client_addr] = decrypted_data
+                    # Decrypt and decode message
+                    #elif data maybe handle case client sends hello
+                    else:
+                        data = base64.b64decode(data, ' /')
+                        decrypted_data = self._decrypt_data(data)
+                        #print("_handle_client type = ",type(decrypted_data))
+                        if client_addr not in self._clients:
+                            self._clients.append(client_addr)
+                        self._images[client_addr] = decrypted_data
+                except:
+
+                    print("\nBad guy who disconnected = ",client_addr,f"\n number of clients = {len(self._clients)},number of images = {len(self._images)}\n")
+                    if client_addr in self._clients:
+                        self._clients.remove(client_addr)
+                    if client_addr in self._images.keys():
+                        del self._images[client_addr]
+                    print(f"\n number of clients = {len(self._clients)},number of images = {len(self._images)}\n")
+
+
 
                 # Add else case that will be error
         finally:
