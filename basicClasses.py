@@ -49,12 +49,17 @@ MAX_CLIENTS = 50 #Maybe not necessary
 #Write destructor for all the classes
 #Maybe adjust size of images on client size to decrease size of each image, and then resize it on server side
 #Maybe the size of the final image the server sends should be the same but the size of the pics in it changes based on the amount of clients
+#Maybe on the client size do resize using cv2.resize and not imutils
 #Maybe resize pics again for the client so that it fits well on the screen.Need to get screen width and height
 #Decide what to do with the current client image resize that is happeninng right now
 #What to do if someone doesn't have a camera? Not include him, or is it beyond the scope of the project
 #Maybe these values should be const self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
 ##How to handle client trying to disconnect correctly in video,audio classes
+#Handle clients disconnecting video,audio clients,server, client bind.
+#Maybe use while loop until correct variables are entered clientSocket init function and maybe elsewhere
 #Do you need to bind client socket? If so make necessary changes. Also do we need to send hello and if so how to handle it
+#First check chat on other device, then combine video and chat, and then rewrite audio and then combine all three
+#Clean up mess video both client and server and run on shahar's computer to check
 
 #You didn't handle it on the server side and didn't send a message from the server when a client disconnected. Also, the program doesn't stop on the client side when the user inputs exit. ALso printing order still weird.
 #Add else case that will be error for server handle client function
@@ -63,13 +68,15 @@ MAX_CLIENTS = 50 #Maybe not necessary
 #Removing last line in handle_client server code seems to help - nevermind now
 #Add UI to the chat.Also copy ti into chatclient,chatserver
 #Printing order in client side
+#Password make sure you can choose and that you can't see it in the code.Maybe make  it environment variable
+#How to get the message to the other sockets when user types exit to end
 
 
 class Socket(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, server_ip, port,socket_type="UDP"):
+    def __init__(self, server_ip, server_port, socket_type="UDP"):
         self._server_ip = server_ip
-        self._port = port
+        self._server_port = server_port
         self._socket_type = socket_type.lower()
         if self._socket_type == "udp":
             self._my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -98,8 +105,8 @@ class Socket(abc.ABC):
 
 
 class ServerSocket(Socket):
-    def __init__(self, server_ip, port,socket_type="UDP"):
-        Socket.__init__(self,server_ip, port,socket_type)
+    def __init__(self, server_ip, server_port, socket_type="UDP"):
+        Socket.__init__(self, server_ip, server_port, socket_type)
         if self._socket_type == "udp":
             self._clients = []
         elif self._socket_type == "tcp":
@@ -109,8 +116,8 @@ class ServerSocket(Socket):
             pass
 
     def start(self):#Maybe should be protected and instead used in a function like main loop
-        self._my_socket.bind((self._server_ip, self._port))
-        print(f"Server listening on {self._server_ip}:{self._port}")
+        self._my_socket.bind((self._server_ip, self._server_port))
+        print(f"Server listening on {self._server_ip}:{self._server_port}")
         if self._socket_type == "tcp":
             self._my_socket.listen(MAX_CLIENTS)
         #Add connecting to server and checking password here
@@ -144,17 +151,22 @@ class ServerSocket(Socket):
 """
 
 class ClientSocket(Socket):
-    def __init__(self, server_ip, port,socket_type="UDP"):
-        Socket.__init__(self,server_ip,port,socket_type)
+    def __init__(self, server_ip, server_port, client_ip=None, client_port=None, socket_type="UDP"):
+        Socket.__init__(self, server_ip, server_port, socket_type)
+        if self._socket_type == "udp":
+            self._client_ip = client_ip
+            self._client_port = client_port
+            if self._client_ip is None or self._client_port is None:#Maybe use while loop until correct variables are entered
+                raise ValueError("When the socket is UDP, client ip and client port must be actual values.")
 
     def connect(self): #Maybe should be protected and instead used in a function like main loop
         if self._socket_type == "udp":
             #message = b'Hello'
             #self._my_socket.sendto(message, (self._server_ip, self._port))
             #Maybe sending hello is necessary
-            self._my_socket.bind(("10.0.0.16", 8888)) #Obviously this is temporary and may have to change
+            self._my_socket.bind((self._client_ip, self._client_port)) #Obviously this is temporary and may have to change
         elif self._socket_type == "tcp":
-            self._my_socket.connect((self._server_ip, self._port))
+            self._my_socket.connect((self._server_ip, self._server_port))
         #connect to server. Maybe add a way to check if the data that is received is from the
         #actual server and maybe instead of sending "Hello" send password or maybe username and password
         #That is encoded in some way and saved in the server Database. Talk to Alon about these options
@@ -163,7 +175,7 @@ class ClientSocket(Socket):
         self.client_socket.sendall(data.encode())"""
     def _send_data(self,data):
         if self._socket_type == "udp":
-            self._my_socket.sendto(data, (self._server_ip, self._port))
+            self._my_socket.sendto(data, (self._server_ip, self._server_port))
         elif self._socket_type == "tcp":
             self._my_socket.send(data)
         #Maybe should be written differently, and maybe should be abstract method
@@ -186,40 +198,11 @@ class ClientSocket(Socket):
 """
 
 
-class VideoClient(ClientSocket):
-    def __init__(self, server_ip, port):
-        ClientSocket.__init__(self, server_ip, port)
-        self._fps,self._st,self._frames_to_count,self._cnt = (0,0,20,0)
-
-    def _handle_data(self,data):
-        data = base64.b64decode(data, ' /')
-        npdata = np.frombuffer(data, dtype=np.uint8)
-        frame = cv2.imdecode(npdata, 1)
-        frame = cv2.putText(frame, 'FPS: ' + str(self._fps), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        #Maybe make these measurements constant variables
-        cv2.imshow("RECEIVING VIDEO", frame)
-
-    def handle_server(self):
-        while True:
-            data = self._receive_data()
-            self._handle_data(data)
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):
-                self._close()
-                break
-            if self._cnt == self._frames_to_count:
-                try:
-                    self._fps = round(self._frames_to_count / (time.time() - self._st))
-                    self._st = time.time()
-                    self._cnt = 0
-                except:
-                    pass
-            self._cnt += 1
 
 
 class AudioClient(ClientSocket):
-    def __init__(self, server_ip, port):
-        ClientSocket.__init__(self, server_ip, port)
+    def __init__(self, server_ip, server_port):
+        ClientSocket.__init__(self, server_ip, server_port)
         self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
 
     def _handle_data(self, data):
@@ -248,57 +231,6 @@ class AudioClient(ClientSocket):
             self._cnt += 1
 
 
-class VideoServer(ServerSocket):
-    WIDTH = 400
-
-    def __init__(self, server_ip, port):
-        ServerSocket.__init__(self, server_ip, port)
-        self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
-        self._vid = cv2.VideoCapture(0)
-
-    def _get_data(self):
-        _,frame = self._vid.read()
-        self._add_text_to_image(frame)
-        return frame
-
-    def _process_frame(self,frame):
-        encoded, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-
-        #self._add_text_to_image(buffer) - doesn't work when the line is here, but does work in _get_data
-        message = base64.b64encode(buffer)
-        return message
-
-    def _add_text_to_image(self,img, text="Bob", position=(10, 30), font=cv2.FONT_HERSHEY_SIMPLEX, font_scale=1, color=(0, 0, 0),
-                          thickness=2):
-        cv2.putText(img, text, position, font, font_scale, color, thickness)
-
-    def _handle_client(self,data, client_addr):
-        frame = data
-        message = self._process_frame(frame)
-        self._my_socket.sendto(message, client_addr)
-        return frame
-
-    def handle_all_clients(self):
-        while self._vid.isOpened():
-            frame =self._get_data()
-            frame = imutils.resize(frame, width=VideoServer.WIDTH)
-            for client_addr in self._clients:
-                self._handle_client(frame,client_addr)
-            frame = cv2.putText(frame, 'FPS: ' + str(self._fps), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-            cv2.imshow('TRANSMITTING VIDEO', frame)
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):
-                self._close()
-                break
-            if self._cnt == self._frames_to_count:
-                try:
-                    self._fps = round(self._frames_to_count / (time.time() - self._st))
-                    self._st = time.time()
-                    self._cnt = 0
-                except:
-                    pass
-            self._cnt += 1
-
 
 class Audio(abc.ABC):
     def __init__(self):
@@ -309,220 +241,7 @@ class AudioServer(ServerSocket):
     pass
 
 
-class ChatClient(ClientSocket):
-    _KEY = b'This is a key!!!'  # 16 bytes
 
-    def __init__(self, server_ip, port):
-        ClientSocket.__init__(self, server_ip, port,"tcp")
-        self._name = input("Enter your username: ")
-
-    def get_name(self):
-        return self._name
-
-
-    def _send_message(self, message_type, payload):
-        message = {"type": message_type, "payload": payload}
-        serialized_message = json.dumps(message)
-        encrypted_message = self._encrypt_message(serialized_message)
-        self._my_socket.send(encrypted_message)
-
-    def _receive_message(self):
-        data = self._my_socket.recv(1024)
-        decrypted_data = self._decrypt_message(data)
-        return json.loads(decrypted_data)
-
-    def _encrypt_message(self,message):
-        cipher = AES.new(self._KEY, AES.MODE_CBC)
-        padded_message = pad(message.encode(), AES.block_size)
-        encrypted_message = cipher.iv + cipher.encrypt(padded_message)
-        return encrypted_message
-
-    def _decrypt_message(self,encrypted_message):
-        cipher = AES.new(self._KEY, AES.MODE_CBC, encrypted_message[:16])
-        decrypted_message = unpad(cipher.decrypt(encrypted_message[16:]), AES.block_size)
-        return decrypted_message.decode()
-
-    def _receive_messages(self):
-        while True:
-            message = self._receive_message()
-            message_type = message.get("type")
-            if message_type == "MSG":
-                print("" + message["payload"])
-            elif message_type == "SYS":
-                print("[System]:", message["payload"])
-            elif message_type == "ACK":
-                print("[System]:", message["payload"])
-                break
-
-    def _send_messages(self):
-        while True:
-            message = input("Enter your message (type 'exit' to quit): ")
-            if message.lower() == "exit":
-                self._send_message("EXIT", "exit")
-                break
-            if len(json.dumps({"type": "MSG", "payload": message})) > 1024:
-                print("Message too long. Please send a shorter message.")
-                continue
-            self._send_message("MSG", message)
-
-    def start(self):
-        self.connect()
-
-        # Send password to server
-        password = input("Enter your password: ")
-        self._send_message("PWD", password)
-
-        # Receive verification message from server
-        verification_message = self._receive_message()
-        print(verification_message)
-        if "Password verified" in verification_message["payload"]:
-            return True
-        return False
-
-    def main(self):
-
-        threads = []
-        threads_closed = True
-        verified = self.start()
-        yield verified
-        if verified:
-
-            self._send_message("USR", self._name)
-
-            # Start threads for sending and receiving messages
-            receive_thread = threading.Thread(target=self._receive_messages)
-            send_thread = threading.Thread(target=self._send_messages,)
-            threads.append(receive_thread)
-            threads.append(send_thread)
-            receive_thread.start()
-            send_thread.start()
-
-            # Wait for both threads to finish
-            receive_thread.join()
-            send_thread.join()
-        for thread in threads:
-            if thread.is_alive():
-                threads_closed = False
-        if threads_closed:
-            self._close()
-
-
-class ChatServer(ServerSocket):
-    _KEY = b'This is a key!!!'  # 16 bytes
-    __PASSWORD = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
-    def __init__(self, server_ip, port):
-        ServerSocket.__init__(self, server_ip, port,"tcp")
-        self._broadcast_messages = []  # List to store messages to be broadcasted
-        #clients = {}  # {client_socket: (username, address)}
-
-    def _verify_password(self,password):
-        # Hash the password
-        hashed_password = hashlib.sha256(password.encode()).hexdigest()
-        # Compare with stored hashed password
-        stored_password = self.__PASSWORD
-        return hashed_password == stored_password
-
-    def _handle_client(self,client_socket, address):
-        username = None
-        try:
-            while True:
-                # Receive message from client
-                data = client_socket.recv(1024)
-                if not data:
-                    break
-
-                # Decrypt and decode message
-                decrypted_data = self._decrypt_message(data)
-                message = json.loads(decrypted_data)
-
-                # Process message based on type
-                message_type = message.get("type")
-                if message_type == "PWD":
-                    password = message.get("payload")
-                    if self._verify_password(password):
-                        response = {"type": "ACK", "payload": "Password verified. Send your username."}
-                        self._send_message(client_socket, response)
-                    else:
-                        username = ["Error"]  # "Error".Make this the username so that no user can actually usr this but also it passed the test of not being None
-                        response = {"type": "ERR", "payload": "Invalid password. Connection closed."}
-                        self._send_message(client_socket, response)
-                        return
-                elif message_type == "USR":
-                    username = message.get("payload")
-                    print(f"User '{username}' connected from {address}")
-                    self._clients[client_socket] = (username, address)
-                    self._send_notification(f"User '{username}' joined the chat.")
-                elif message_type == "MSG":
-                    chat_message = message.get("payload")
-                    sender_username = self._clients.get(client_socket)[0]
-
-                    self._broadcast_messages.append((sender_username, chat_message))
-                elif message_type == "EXIT":
-                    chat_message = message.get("payload")
-                    sender_username = self._clients.get(client_socket)[0]
-                    print(f"User '{sender_username}' disconnected from {address}")
-                    self._send_message(client_socket, {"type": "ACK", "payload": "You disconnected. Have a good day."})
-                    break  # Exit loop and close connection
-                # Add else case that will be error
-        finally:
-            # If client disconnects, remove from clients dictionary and broadcast the departure
-            if username:
-                del self._clients[client_socket]
-                if username != ["Error"]:
-                    self._send_notification(f"User '{username}' left the chat.")
-                    # send_remaining_clients(f"User '{username}' left the chat.")
-            client_socket.close()  # Removing this line seems to work.Nevermind.
-
-    def _send_notification(self,notification_message):
-        self._broadcast_messages.append(("System", notification_message))
-
-    # def send_remaining_clients(message):
-    #    for client_socket, _ in clients.items():
-    #        send_message(client_socket, {"type": "SYS", "payload": message})
-
-    def _send_broadcast_messages(self):
-        while True:
-            if self._broadcast_messages:
-                messages_to_send = self._broadcast_messages.copy()  # Copy the list to avoid race condition
-                self._broadcast_messages.clear()  # Clear the original list
-                # Broadcast message to all connected clients
-                for client_socket, (username, _) in self._clients.items():
-                    for sender_username, message in messages_to_send:
-                        if sender_username == "System":
-                            self._send_message(client_socket, {"type": "SYS", "payload": message})
-                        else:
-                            self._send_message(client_socket, {"type": "MSG", "payload": f"{sender_username}: {message}"})
-
-    def _decrypt_message(self,encrypted_message):
-        cipher = AES.new(self._KEY, AES.MODE_CBC, encrypted_message[:16])
-        decrypted_message = unpad(cipher.decrypt(encrypted_message[16:]), AES.block_size)
-        return decrypted_message.decode()
-
-    def _send_message(self,client_socket, message):
-        serialized_message = json.dumps(message)
-        encrypted_message = self._encrypt_message(serialized_message)
-        client_socket.send(encrypted_message)
-
-    def _encrypt_message(self,message):
-        cipher = AES.new(self._KEY, AES.MODE_CBC)
-        padded_message = pad(message.encode(), AES.block_size)
-        encrypted_message = cipher.iv + cipher.encrypt(padded_message)
-        return encrypted_message
-
-    def main(self):
-        self.start()
-
-
-        # Start a thread to broadcast messages to clients
-        broadcast_thread = threading.Thread(target=self._send_broadcast_messages)
-        broadcast_thread.start()
-
-        while True:
-            client_socket,address = self.connect()
-
-            # Start a new thread to handle the client
-            client_thread = threading.Thread(target=self._handle_client, args=(client_socket, address))
-            client_thread.start()
 
 """
 class Client:
