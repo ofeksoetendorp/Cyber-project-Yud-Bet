@@ -5,12 +5,14 @@ from Crypto.Util.Padding import pad, unpad
 import threading
 from basicClasses import ClientSocket
 # Encryption key (must be 16 bytes long)
+#How to get the message to the other sockets when user types exit to end
+
 class ChatClient(ClientSocket):
     _KEY = b'This is a key!!!'  # 16 bytes
 
     def __init__(self, server_ip, server_port):
         ClientSocket.__init__(self, server_ip, server_port, socket_type="tcp")
-        self._name = input("Enter your username: ")
+        self._name = input("Enter your username: ") #Maybe should be passed as parameter as well
 
     def get_name(self):
         return self._name
