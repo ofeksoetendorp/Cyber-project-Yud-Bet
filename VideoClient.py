@@ -6,6 +6,8 @@ import time
 import imutils
 import threading
 import time
+import asyncio
+
 #Need to add threading here
 #Very likely that program tries to call destructor twice. Handle it. Maybe like we did in chat
 #Maybe should add .decode somewhere
@@ -106,6 +108,7 @@ class VideoClient(ClientSocket):
                     pass
             self._cnt += 1
 
+    #async def main(self):
     def main(self):
         #threads = []
         #threads_closed = True

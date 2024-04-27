@@ -1,6 +1,7 @@
 import socket
 import json
 import time
+import asyncio
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
@@ -87,6 +88,7 @@ class ChatClient(ClientSocket):
         self._close_threads = True
         return False
 
+    #async def main(self):
     def main(self):
 
         #threads = []

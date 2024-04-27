@@ -2,6 +2,8 @@ import socket
 import hashlib
 import json
 import threading
+import time
+
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from basicClasses import ServerSocket
@@ -84,6 +86,8 @@ class ChatServer(ServerSocket):
 
     def _send_broadcast_messages(self):
         while True:
+            print() #SEEMS THAT you can print anything and make it better
+            #time.sleep(1) Maybe use sleep instead? Could be that the IO time is what saves us here from huge amount of iterations but that doesn't make sense since most of the time the list is empty and doesn't enter if statement
             if self._broadcast_messages:
                 messages_to_send = self._broadcast_messages.copy()  # Copy the list to avoid race condition
                 self._broadcast_messages.clear()  # Clear the original list
