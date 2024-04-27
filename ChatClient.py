@@ -20,7 +20,7 @@ class ChatClient(ClientSocket):
     def __del__(self):
         self._close_threads = True
         #Maybe add wait here so code doesn't collapse
-        time.sleep(1)
+        #time.sleep(1)
         print("Closing client")
         self._close()
 

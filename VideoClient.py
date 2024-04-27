@@ -34,7 +34,7 @@ class VideoClient(ClientSocket):
     def __del__(self):
         self._close_threads = True
         #Maybe add wait here so code doesn't collapse
-        #time.sleep(1)
+        time.sleep(1)
         print("deleting video client")
         self._my_socket.sendto(b"Exit", (self._server_ip, self._server_port))
         self._vid.release()
