@@ -64,6 +64,11 @@ MAX_CLIENTS = 50 #Maybe not necessary
 #Add error class
 #Handle closing server video and others
 #Maybe add option of closing server video and others. Very similar to client disconnect probably
+#Check chat with new changes
+#Maybe connect should be done in constructor
+#VideoCapture0 should maybe be in connect
+#Differences between chatClient and VideoClient ending threads
+#Add destructor to each class but particularly ChatClient
 
 #You didn't handle it on the server side and didn't send a message from the server when a client disconnected. Also, the program doesn't stop on the client side when the user inputs exit. ALso printing order still weird.
 #Add else case that will be error for server handle client function
@@ -157,12 +162,13 @@ class ServerSocket(Socket):
 class ClientSocket(Socket):
     def __init__(self, server_ip, server_port, client_ip=None, client_port=None, socket_type="UDP"):
         Socket.__init__(self, server_ip, server_port, socket_type)
+        self._close_threads = False
         if self._socket_type == "udp":
             self._client_ip = client_ip
             self._client_port = client_port
             if self._client_ip is None or self._client_port is None:#Maybe use while loop until correct variables are entered
                 raise ValueError("When the socket is UDP, client ip and client port must be actual values.")
-
+                #Add except classes
     def connect(self): #Maybe should be protected and instead used in a function like main loop
         if self._socket_type == "udp":
             #message = b'Hello'
@@ -246,32 +252,6 @@ class AudioServer(ServerSocket):
 
 
 
-
-"""
-class Client:
-    def __init__(self,server_ip, port):
-    #Maybe client could have attribute name which will be passed to chatclient,videoclient
-        self._chat_client = chatClient
-        generator = self._chatClient.main()
-        valid = next(generator,None)
-
-        if not valid:
-            exit()
-        else:
-            self._video_client = VideoClient(server_ip, port,self._chatClient.getName())
-            self._audio_client = AudioClient(server_ip, port)
-            next(generator,None)
-            #Once user decides to exit chat, all the other threads must end.Potential options: global variable which once the chatClient ends it executed closing all the other threads
-            #Another option is like clientChat main function closing the threads in the same way.Write destructors for all the classes
-            threads
-
-    def
-
-
-class Server:
-    pass
-
-"""
 """
 if __name__ == "__main__":
     server = Server('127.0.0.1', 8888)
