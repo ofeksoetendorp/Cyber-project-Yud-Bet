@@ -6,7 +6,7 @@ import time
 import imutils
 import threading
 from pydub import AudioSegment
-import  pyaudio
+import pyaudio
 
 #Need to add threading here
 #How to handle client trying to disconnect correctly
@@ -75,7 +75,7 @@ class AudioServer(ServerSocket):
                     if not data:
                         break
                     if data == b"Exit": #Maybe should be b"Exit"
-                        print(f"User disconnected from {client_addr}!!!!")
+                        print(f"User disconnected from {client_addr}!!!!!!!!!!!!!!")
                         if client_addr in self._clients:
                             self._clients.remove(client_addr)
                         if client_addr in self._audio_bits.keys():
@@ -107,6 +107,7 @@ class AudioServer(ServerSocket):
 
     def _send_broadcast_messages(self):
         while True:
+            print()
             if self._audio_bits:
                 # Broadcast message to all connected clients
                 sounds_copy = list(self._audio_bits.values()).copy()#maybe later it will be the queue.head()).copy() #This may be better that just sending the values to the function directly

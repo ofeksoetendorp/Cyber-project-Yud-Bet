@@ -15,9 +15,11 @@ import hashlib
 BUFF_SIZE = 65536
 CHUNK = 1024  # original code was 10 * 1024 but then the audio was less smooth
 CHANNELS = 2
-RATE = 44100
+FS = 44100
 OUTPUT = True
+INPUT = True
 FRAMES_PER_BUFFER = CHUNK
+SAMPLE_FORMAT = pyaudio.paInt16  # 16 bits per sample.Maybe use bigger amount of bits per sample
 MAX_CLIENTS = 50 #Maybe not necessary
 #maybe add virtual class for socket classes with the basic functions that are shared
 # by the server,client classes
@@ -69,6 +71,16 @@ MAX_CLIENTS = 50 #Maybe not necessary
 #VideoCapture0 should maybe be in connect
 #Differences between chatClient and VideoClient ending threads
 #Add destructor to each class but particularly ChatClient
+#Maybe don't use set function may not be safe
+#Handle fps and what else
+#For some reason the q is very important for video client to work
+#Very serious problem on Shahar's computer maybe requiring ffget
+#Very serious problem on Shahar's computer maybe requiring ffget
+#Very serious problem on Shahar's computer maybe requiring ffget
+#Audio Manager may need to inherit from abc.ABC and maybe not (maybe just needs () in the definition or nothinh)
+#Maybe don't need to call destructor in audio client for audio manager
+#Seems like there is a problem when connecting with wrong password, then right one, and then quitting
+#Very weird seems to convert audioclient closethreads to true (or call destructor) without calling it. Makes sense actually. If it isn't a part of main then when the rest closes the audioclient will close as well
 
 #You didn't handle it on the server side and didn't send a message from the server when a client disconnected. Also, the program doesn't stop on the client side when the user inputs exit. ALso printing order still weird.
 #Add else case that will be error for server handle client function
@@ -79,7 +91,7 @@ MAX_CLIENTS = 50 #Maybe not necessary
 #Printing order in client side
 #Password make sure you can choose and that you can't see it in the code.Maybe make  it environment variable
 #How to get the message to the other sockets when user types exit to end
-
+#Very serious problem on Shahar's computer maybe requiring ffget
 
 class Socket(abc.ABC):
     @abc.abstractmethod
@@ -208,48 +220,39 @@ class ClientSocket(Socket):
 """
 
 
-
-
-class AudioClient(ClientSocket):
-    def __init__(self, server_ip, server_port):
-        ClientSocket.__init__(self, server_ip, server_port)
-        self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
-
-    def _handle_data(self, data):
-        data = base64.b64decode(data, ' /')
-        npdata = np.frombuffer(data, dtype=np.uint8)
-        frame = cv2.imdecode(npdata, 1)
-        frame = cv2.putText(frame, 'FPS: ' + str(self._fps), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        # Maybe make these measurements constant variables
-        cv2.imshow("RECEIVING VIDEO", frame)
-
-    def handle_server(self):
-        while True:
-            data = self._receive_data()
-            self._handle_data(data)
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):
-                self._close()
-                break
-            if self._cnt == self._frames_to_count:
-                try:
-                    self._fps = round(self._frames_to_count / (time.time() - self._st))
-                    self._st = time.time()
-                    self._cnt = 0
-                except:
-                    pass
-            self._cnt += 1
-
-
-
-class Audio(abc.ABC):
+class AudioManager:
     def __init__(self):
-        self._p = pyaudio.PyAudio()
+        #Maybe cut out server and each client sends directly to other clients
+        #Make sure to encode information
+        #Maybe these need to be public for socket classes
+        self._p = pyaudio.PyAudio() #Maybe server doesn't need an output stream
+        self._input_stream = self._p.open(format=SAMPLE_FORMAT,
+                    channels=CHANNELS,
+                    rate=FS,
+                    frames_per_buffer=CHUNK,
+                    input=INPUT)
 
+        # Open output stream
+        # Maybe server doesn't need an output stream
+        self._output_stream = self._p.open(format=SAMPLE_FORMAT,
+                               channels=CHANNELS,
+                               rate=FS,
+                               output=OUTPUT,
+                               frames_per_buffer=CHUNK)
 
-class AudioServer(ServerSocket):
-    pass
+    def __del__(self): #Make sure that this is called once at the end of the socket classes
+        print("Closing audio manager")
+        self._input_stream.stop_stream()
+        self._input_stream.close()
+        self._output_stream.stop_stream()
+        self._output_stream.close()
+        self._p.terminate()
 
+    def read(self):
+        return self._input_stream.read(CHUNK)
+
+    def write(self,data):
+        self._output_stream.write(data)
 
 
 """

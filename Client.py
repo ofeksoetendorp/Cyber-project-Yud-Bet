@@ -1,5 +1,6 @@
 from ChatClient import ChatClient
 from VideoClient import VideoClient
+from AudioClient import AudioClient
 import concurrent.futures
 import threading
 import asyncio
@@ -10,11 +11,14 @@ import asyncio
 #Maybe use asynco instead
 #Read more about Future objects
 #Read about other version
+#Maybe don't use set function may not be safe
+#For some reason the q is very important for video client to work
 class Client:
-    def __init__(self,server_ip, server_port1,server_port2,client_ip,client_port,name):
+    def __init__(self,server_ip, server_port1,server_port2,server_port3,client_ip,client_port1,client_port2,name):
     #Maybe client could have attribute name which will be passed to chatclient,videoclient
         self._chat_client = ChatClient(server_ip,server_port1,name)
-        self._video_client = VideoClient(server_ip,server_port2,client_ip,client_port,name)
+        self._video_client = VideoClient(server_ip,server_port2,client_ip,client_port1,name)
+        self._audio_client = AudioClient(server_ip, server_port3, client_ip, client_port2)
     """async def main(self):
         async for yielded_value in self._chat_client.main():
             # Process the yielded value
@@ -42,6 +46,7 @@ class Client:
                 #   threads.append(send_thread)
                 #video_thread.start()
                 executor.submit(self._video_client.main)
+                executor.submit(self._audio_client.main)
 
                 flag = next(future.result(), None)
                 print("flag=", flag)
@@ -49,9 +54,9 @@ class Client:
                     #flag = next(future.result(), None)
                     #print("flag=", flag)
                     #self._video_client.__del__()
-                    self._video_client.set_close_threads(True)
+                    self._video_client.set_close_threads(True)#Maybe don't use set function may not be safe
+                    self._audio_client.set_close_threads(True)
                     #executor.shutdown()
-
 
                 # Wait for both threads to finish
                 #video_thread.join()

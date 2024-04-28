@@ -36,9 +36,9 @@ class AudioClient(ClientSocket):
         self._close_threads = True
         #Maybe add wait here so code doesn't collapse
         time.sleep(1)
-        print("deleting video client")
+        print("deleting audio client")
         self._my_socket.sendto(b"Exit", (self._server_ip, self._server_port))
-        self._audio_manager.__del__() #Maybe destructor will be called automatically
+        #self._audio_manager.__del__() #Maybe destructor will be called automatically
         self._close()
 
     def _handle_data_from_server(self,data):
