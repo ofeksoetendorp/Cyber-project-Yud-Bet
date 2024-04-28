@@ -21,6 +21,8 @@ import asyncio
 #Since both of the displaying parts of the code access the same self._ variables it is possible there may be error in the values there. Also they are very similar so maybe should create a function for them.
 #Maybe connect should be done in constructor
 #VideoCapture0 should maybe be in connect or main
+# Seems like it is important to keep the waitkey around
+
 class VideoClient(ClientSocket):
     _WIDTH = 400
 
@@ -55,9 +57,10 @@ class VideoClient(ClientSocket):
             data = self._receive_data()
             self._handle_data_from_server(data)
             key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):#Maybe you can change it so that instead of just one key, if you enter "exit" it will end
-                self._close_threads = True
-                break #This line may be unnecessary
+            #Seems like it is important to keep the waitkey around
+            #if key == ord('q'):#Maybe you can change it so that instead of just one key, if you enter "exit" it will end
+            #    self._close_threads = True
+            #    break #This line may be unnecessary
             if self._cnt == self._frames_to_count:
                 try:
                     self._fps = round(self._frames_to_count / (time.time() - self._st))
@@ -96,9 +99,10 @@ class VideoClient(ClientSocket):
             frame = cv2.putText(frame, 'FPS: ' + str(self._fps), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
             cv2.imshow('TRANSMITTING VIDEO', frame)
             key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):#Maybe you can change it so that instead of just one key, if you enter "exit" it will end
-                self._close_threads = True
-                break  # This line may be unnecessary
+            #Seems like it is important to keep the waitkey around
+            #if key == ord('q'):#Maybe you can change it so that instead of just one key, if you enter "exit" it will end
+            #    self._close_threads = True
+            #    break  # This line may be unnecessary
             if self._cnt == self._frames_to_count:
                 try:
                     self._fps = round(self._frames_to_count / (time.time() - self._st))
