@@ -107,7 +107,9 @@ class AudioServer(ServerSocket):
 
     def _send_broadcast_messages(self):
         while True:
-            print()
+            print()#In both the ChatServer and AudioServer for some reason adding print(or sleep) seems to make the video become much faster
+
+
             if self._audio_bits:
                 # Broadcast message to all connected clients
                 sounds_copy = list(self._audio_bits.values()).copy()#maybe later it will be the queue.head()).copy() #This may be better that just sending the values to the function directly

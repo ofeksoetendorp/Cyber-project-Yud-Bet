@@ -21,6 +21,9 @@ import time
 #Maybe connect should be done in constructor
 #VideoCapture0 should maybe be in connect or main
 #Maybe add being able to disconnect in clinet using pressing q to see what happens when disconnecting and if destructor of audiomangager is called
+#Audio quality very poor when there are 2 users connected. May need to change audiobits dictionary in clientAudio to have queues as values
+#Audio quality very poor when there are 2 users connected. May need to change audiobits dictionary in clientAudio to have queues as values
+
 class AudioClient(ClientSocket):
     #Possibly need 4 threads. Read from server. Play from server.Read my mic.Send from mic
     def __init__(self, server_ip, server_port,client_ip,client_port):

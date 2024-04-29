@@ -86,7 +86,7 @@ class ChatServer(ServerSocket):
 
     def _send_broadcast_messages(self):
         while True:
-            print() #SEEMS THAT you can print anything and make it better
+            print() #SEEMS THAT you can print anything and make it better #In both the ChatServer and AudioServer for some reason adding print seems to make the video become much faster
             #time.sleep(1) Maybe use sleep instead? Could be that the IO time is what saves us here from huge amount of iterations but that doesn't make sense since most of the time the list is empty and doesn't enter if statement
             if self._broadcast_messages:
                 messages_to_send = self._broadcast_messages.copy()  # Copy the list to avoid race condition

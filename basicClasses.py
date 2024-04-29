@@ -14,7 +14,7 @@ import hashlib
 
 BUFF_SIZE = 65536
 CHUNK = 1024  # original code was 10 * 1024 but then the audio was less smooth
-CHANNELS = 2
+CHANNELS = 1#Was originally 2 but that caused some problems on another computer. Changing it to 1 seems to have fixed it
 FS = 44100
 OUTPUT = True
 INPUT = True
@@ -74,13 +74,16 @@ MAX_CLIENTS = 50 #Maybe not necessary
 #Maybe don't use set function may not be safe
 #Handle fps and what else
 #For some reason the q is very important for video client to work
-#Very serious problem on Shahar's computer maybe requiring ffget
-#Very serious problem on Shahar's computer maybe requiring ffget
-#Very serious problem on Shahar's computer maybe requiring ffget
+#Very serious problem on Shahar's computer maybe requiring ffget- Problem was CHANNELS = 2. Changing it to 1 fixed it
 #Audio Manager may need to inherit from abc.ABC and maybe not (maybe just needs () in the definition or nothinh)
 #Maybe don't need to call destructor in audio client for audio manager
 #Seems like there is a problem when connecting with wrong password, then right one, and then quitting
 #Very weird seems to convert audioclient closethreads to true (or call destructor) without calling it. Makes sense actually. If it isn't a part of main then when the rest closes the audioclient will close as well
+#Check audioclient,audioserver again multiple times both on mines and Shahar's computer
+#Sleep multiplier should be a constant audioclient
+#There was problem with number of CHANNLES being 2. Changing it to 1 seems to have fixed it.
+#In both the ChatServer and AudioServer for some reason adding print(or sleep) seems to make the video become much faster
+#Audio quality very poor when there are 2 users connected. May need to change audiobits dictionary in clientAudio to have queues as values
 
 #You didn't handle it on the server side and didn't send a message from the server when a client disconnected. Also, the program doesn't stop on the client side when the user inputs exit. ALso printing order still weird.
 #Add else case that will be error for server handle client function
