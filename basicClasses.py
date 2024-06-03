@@ -84,6 +84,21 @@ MAX_CLIENTS = 50 #Maybe not necessary
 #There was problem with number of CHANNLES being 2. Changing it to 1 seems to have fixed it.
 #In both the ChatServer and AudioServer for some reason adding print(or sleep) seems to make the video become much faster
 #Audio quality very poor when there are 2 users connected. May need to change audiobits dictionary in clientAudio to have queues as values
+#Add destructor for each class
+#Maybe each thread in every client,server class should have a separate socket. Maybe start with audioclient,audioserver.Maybe should add receiving to the receiving socket on the client side.
+#Connect other mics,cameras to computer. Should help checking code with more people connected
+#Run thread for very long time to test strength of code.
+#Maybe add another thread for hearing the recordings and add every received recording to a queue.
+#Maybe changing sleep constant could impact the sound and make it better.
+#video need to remove fps.
+#Password and key need to be determinable at runtime
+#Maybe sleep time in destructor should be constant
+#If you can't sound multiple sounds at once maybe add to a stack and sound one at a time
+#אולי להשתמש בconditional values וmonitors בפרויקט,אולי להוסיף mutex לפרויקט
+#Add comments to the code
+#תיק פרויקט
+# Did we fix it so that now any password can be chosen
+#Is the audio okay when connecting from multiple clients but without video,chat? If so there may be a problem there. Otherwise it's probably here and maybe the problem is we are using the first audio to deetemine length
 
 #You didn't handle it on the server side and didn't send a message from the server when a client disconnected. Also, the program doesn't stop on the client side when the user inputs exit. ALso printing order still weird.
 #Add else case that will be error for server handle client function
@@ -95,6 +110,9 @@ MAX_CLIENTS = 50 #Maybe not necessary
 #Password make sure you can choose and that you can't see it in the code.Maybe make  it environment variable
 #How to get the message to the other sockets when user types exit to end
 #Very serious problem on Shahar's computer maybe requiring ffget
+# Maybe add sleep on server side
+# May not need these lines             key = cv2.waitKey(1) & 0xFF
+#HEIGHT May not be necesaary, just for testing
 
 class Socket(abc.ABC):
     @abc.abstractmethod
@@ -131,6 +149,8 @@ class Socket(abc.ABC):
 class ServerSocket(Socket):
     def __init__(self, server_ip, server_port, socket_type="UDP"):
         Socket.__init__(self, server_ip, server_port, socket_type)
+        self._close_threads = False
+
         if self._socket_type == "udp":
             self._clients = []
         elif self._socket_type == "tcp":

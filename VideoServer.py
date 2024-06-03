@@ -34,6 +34,15 @@ class VideoServer(ServerSocket):
         #self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
         self._images = {}#Key will be address and value will be the most recent image from the client
 
+    def set_close_threads(self, value):
+        self._close_threads = value
+
+    def __del__(self):
+        self._close_threads = True
+        time.sleep(1)
+        print("Closing Video Server")
+        self._close()
+
     def _resize_image(self,img, target_height, target_width):
         return cv2.resize(img, (target_width, target_height))
 
@@ -112,7 +121,7 @@ class VideoServer(ServerSocket):
     def _handle_client(self):
         data = None
         try:
-            while True:
+            while not self._close_threads:
                 # Receive message from client
                 try:
                     data,client_addr = self._recv()
@@ -151,7 +160,7 @@ class VideoServer(ServerSocket):
             # If client disconnects, remove from clients dictionary and broadcast the departure
 
     def _send_broadcast_messages(self):
-        while True:
+        while not self._close_threads:
             if self._images:
                 # Broadcast message to all connected clients
                 images_copy = list(self._images.values()).copy() #This may be better that just sending the values to the function directly
