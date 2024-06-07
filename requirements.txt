@@ -1,0 +1,8 @@
+pyaudio
+opencv-python
+numpy
+imutils
+pycryptodome
+customtkinter
+pillow
+pydub
