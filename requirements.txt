@@ -6,3 +6,4 @@ pycryptodome
 customtkinter
 pillow
 pydub
+PyAudio
