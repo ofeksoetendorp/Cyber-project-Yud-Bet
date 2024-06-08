@@ -3,58 +3,47 @@ import base64
 import cv2
 import numpy as np
 import time
-import imutils
 import threading
-#Need to add threading here
-#How to handle client trying to disconnect correctly
-#Maybe should open combinedpicture here to see what's going on
-#How to handle case where client tries to connect with a message that isn't exit or pic
-#Maybe should add .decode somewhere
-#Maybe the check for Exit should be b"Exit" instead. Not sure how the message is passed
-#Split code into parts
-#Maybe using copy function on self.images.values is better than sendung them as they are to the function combineimages
-#Handle clients disconnecting
-#Maybe the problem is that the client socket is closed after it sends the final message and before the server receives the message, which may be problematic
-#Is it taking out the wrong guy(the one who sent the message before it? Is the exception working? Maybe we should use a flag on client side?
-#Why is it only an error when the same computer that runs the server tries to exit?
-#Is it wise to collapse the program knowing that it sometimes blames the wrong guy
-#Maybe open combined images here as well. Also clean up the mess from closing client
-#Handle closing server
-#Maybe add option of closing server. Very similar to client disconnect probably
-#Maybe connect should be done in constructor
+
 
 class VideoServer(ServerSocket):
+    #המחלקה מנהלת קבלת תמונות מהלקוחות השונים, מיזוג של התמונות ושליחתם חזרה ללקוחות
     _TARGET_HEIGHT = 300
     _TARGET_WIDTH = 500
     _FINAL_HEIGHT = 500
     _FINAL_WIDTH = 1000
 
     def __init__(self, server_ip, server_port):
+        #הפונקצייה מקבלת את כתובת הIP של השרת הזה, והפורט הרצוי, ומעבירה אותם לServerSocket
+        #מאחר והשרת רץ בUDP אז לא צריך להעביר מידע זה כי באופן דיפולטיבי שרת יוגדר כUDP
+        #בנוסף נשמור מילון שבו נאחסן את התמונות הכי חדשות של  כל אחד מהלקוחות
         ServerSocket.__init__(self, server_ip, server_port)
-        #self._fps, self._st, self._frames_to_count, self._cnt = (0, 0, 20, 0)
         self._images = {}#Key will be address and value will be the most recent image from the client
 
     def set_close_threads(self, value):
+        #פונקציית set לclose_Threads
         self._close_threads = value
 
     def __del__(self):
+        #פונקציית דיסטרקטור שתגדיר את close threads ל true וכך תגרום לפונקציות המפתח להפסיק לרוץ. היא ממתינה זמן בטוח, ואז סוגרת את הסוקט
         self._close_threads = True
         time.sleep(1)
         print("Closing Video Server")
         self._close()
 
     def _resize_image(self,img, target_height, target_width):
+        #הפונקצייה מקבלת תמונה והמידות הרוצים לתמונה, ומחזירה תמונה עם גודל מעודכן
         return cv2.resize(img, (target_width, target_height))
 
     def _combine_images(self,images,target_height, target_width, final_height, final_width):
+        #הפונקציה מקבלת מערך של תמונות, ומדידות שונות לתמונה הרוצים. הפונקצייה לוקחת את התמונות ומסדרת אותם בצורה של grid
+        #כך שהשורה האחרונה היא היחידה שריקה. היא מחזירה את התמונה הממוזגת
         max_height = 0
         total_width = 0
 
         # Load images and find the maximum height and total width
         for img in images:
-            #print("_combine_images type = ",type(img))
-            #if type(img) == tuple:
-            #    print(img)
+
             max_height = max(max_height, img.shape[0])
             total_width += img.shape[1]
 
@@ -100,25 +89,26 @@ class VideoServer(ServerSocket):
 
 
     def _decrypt_data(self,data):
-        #data = base64.b64decode(data, ' /')
+        #הפונקצייה מקבלת תמונה מקודדת ומחזירה ממנה תמונה
         npdata = np.frombuffer(data, dtype=np.uint8)
         frame = cv2.imdecode(npdata, 1)
         return frame
-        #Maybe make these measurements constant variables
 
     def _process_frame(self,frame):
+        #הפונקצייה מקבלת תמונה ומעבדת אותה, ומחזירה אותה לאחר העיבוד
         encoded, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-        #self._add_text_to_image(buffer) - doesn't work when the line is here, but does work in _get_data
         message = base64.b64encode(buffer)
         return message
 
     def _send_to_client(self,data,client_addr):
+        #הפונקצייה מקבלת תמונה וכתובת של לקוח, מעבדת את התמונה ושולחת את המידע המעובד ללקוח, ומחזירה את התמונה ששולחים
         frame = data
         message = self._process_frame(frame)
         self._my_socket.sendto(message, client_addr)
         return frame
 
     def _handle_client(self):
+        #הפונקצייה רצה בלולאה כל עוד לא רוצים לסגור את המערכת. היא קולטת בכל פעם הודעות, מוסיפה לקוח אם הוא חדש, או מעדכת את התמונה של לקוח אם הוא מוכר
         data = None
         try:
             while not self._close_threads:
@@ -127,7 +117,7 @@ class VideoServer(ServerSocket):
                     data,client_addr = self._recv()
                     if not data:
                         break
-                    if data == b"Exit": #Maybe should be b"Exit"
+                    if data == b"Exit": #אם הלקוח שולח הודעה זו הוא רוצה להתנתק
                         print(f"User disconnected from {client_addr}!!!!")
                         if client_addr in self._clients:
                             self._clients.remove(client_addr)
@@ -135,53 +125,35 @@ class VideoServer(ServerSocket):
                             del self._images[client_addr]
 
                     # Decrypt and decode message
-                    #elif data maybe handle case client sends hello
                     else:
                         data = base64.b64decode(data, ' /')
                         decrypted_data = self._decrypt_data(data)
-                        #print("_handle_client type = ",type(decrypted_data))
                         if client_addr not in self._clients:
                             self._clients.append(client_addr)
                         self._images[client_addr] = decrypted_data
                 except:
                     print("Error")
-                    """"#This may be actively harmful consudering when this is called
-                    print("\nBad guy who disconnected = ",client_addr,f"\n number of clients = {len(self._clients)},number of images = {len(self._images)}\n")
-                    if client_addr in self._clients:
-                        self._clients.remove(client_addr)
-                    if client_addr in self._images.keys():
-                        del self._images[client_addr]
-                    print(f"\n number of clients = {len(self._clients)},number of images = {len(self._images)}\n")"""
 
-
-                # Add else case that will be error
         except:
             print("Error")
             # If client disconnects, remove from clients dictionary and broadcast the departure
 
     def _send_broadcast_messages(self):
+        #הפונקצייה עוברת בלולאה כל עוד לא רוצים לסגור את התוכנית ,עוברת על התמונות של כל הלקוחות, מעתיקה אותם (בשביל למנוע שינוי בזמן השילוב), משלבת אותן ושולחת לכל הלקוחות את התמונה המועדכנת.
         while not self._close_threads:
             if self._images:
                 # Broadcast message to all connected clients
-                images_copy = list(self._images.values()).copy() #This may be better that just sending the values to the function directly
+                images_copy = list(self._images.values()).copy() #This is better that just sending the values to the function directly because doesn't collapse
                 combined_image = self._combine_images(images_copy,VideoServer._TARGET_HEIGHT,VideoServer._TARGET_WIDTH,VideoServer._FINAL_HEIGHT,VideoServer._FINAL_WIDTH)#self._combine_images(self._images.values(),VideoServer._TARGET_HEIGHT,VideoServer._TARGET_WIDTH,VideoServer._FINAL_HEIGHT,VideoServer._FINAL_WIDTH)
                 for client_addr in self._clients:
                     self._send_to_client(combined_image,client_addr)
 
     def main(self):
+        #הפונקצייה המרכזית של המחלקה. הפונקצייה עושה bind לכתובת הרצויה ומתחילה בחוטים נפרדים את פונקציות הקבלה והשליחה של השרת
         self.start()
-        #self.connect()
         # Start a thread to broadcast messages to clients
         broadcast_thread = threading.Thread(target=self._send_broadcast_messages)
         broadcast_thread.start()
-
-        #while True:
-            #address = self.connect()
-
-            # Start a new thread to handle the client
-            #client_thread = threading.Thread(target=self._handle_client)
-            #client_thread.start()
         client_thread = threading.Thread(target=self._handle_client)
         client_thread.start()
-
 

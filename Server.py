@@ -1,29 +1,26 @@
 from ChatServer import ChatServer
 from VideoServer import VideoServer
 from AudioServer import AudioServer
-import threading
-import customtkinter as ctk
-import concurrent.futures
-#Maybe make threads here more compatible with the Client counterpart
-#Maybe use asynco instead
-
 import customtkinter as ctk
 import threading
-import tkinter as tk
 
 
 class Server:
+    #מחלקה המנהלת את כל השרתים השונים שצריכים
     def __init__(self, server_ip, password, server_port1, server_port2, server_port3):
+        #מקבלת את כל הפרמטרים למחלקות הקול השונים
         self._chat_server = ChatServer(server_ip, server_port1, password)
         self._video_server = VideoServer(server_ip, server_port2)
         self._audio_server = AudioServer(server_ip, server_port3)
 
     def __del__(self):
+        #סוגרת את כל המחלקות
         self._chat_server.__del__()
         self._video_server.__del__()
         self._audio_server.__del__()
 
     def main(self):
+        #מתחילה את ההרצה של כל השרתים השונים
         chat_thread = threading.Thread(target=self._chat_server.main)
         chat_thread.start()
 
@@ -93,6 +90,8 @@ class ConfigPage(ctk.CTkFrame):
         self.start_button.grid(row=5, column=0, padx=10, pady=10)
 
     def start_server(self):
+        #פונקציה היוצרת את השרת, ומתחילה את הרצת השרתים השונים
+        #היא עוברת לעמוד הריצה
         server_ip = self.server_ip_entry.get()
         password = self.password_entry.get()
         server_port1 = int(self.server_port1_entry.get())
@@ -120,6 +119,7 @@ class RunningPage(ctk.CTkFrame):
         self.stop_button.grid(row=1, column=0, padx=10, pady=10)
 
     def stop_server(self):
+        #פונקציה שנקראת ברגע לחיצת כפתור הסגירה במהלך הריצה של השרת, וסוגרת את השרתים והעמוד
         if app.server:
             del app.server
             app.server = None
