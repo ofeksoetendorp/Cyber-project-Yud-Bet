@@ -5,13 +5,18 @@ import numpy as np
 import time
 import threading
 
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+
 
 class VideoServer(ServerSocket):
     #המחלקה מנהלת קבלת תמונות מהלקוחות השונים, מיזוג של התמונות ושליחתם חזרה ללקוחות
     _TARGET_HEIGHT = 300
     _TARGET_WIDTH = 500
-    _FINAL_HEIGHT = 500
-    _FINAL_WIDTH = 1000
+    _FINAL_HEIGHT = 300
+    _FINAL_WIDTH = 500
 
     def __init__(self, server_ip, server_port):
         #הפונקצייה מקבלת את כתובת הIP של השרת הזה, והפורט הרצוי, ומעבירה אותם לServerSocket

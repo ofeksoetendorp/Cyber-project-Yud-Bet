@@ -14,6 +14,12 @@ SAMPLE_FORMAT = pyaudio.paInt16  # 16 bits per sample.Maybe use bigger amount of
 MAX_CLIENTS = 50
 
 
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+
+
 class Socket(abc.ABC):
     #מחלקת הסוקטים הבסיסית, שהיא מחלקה אבסטרקטית וממנה יירשו מחלקות סוקטים יותר מתקדמות ויותר ספציפיות בעתיד
     @abc.abstractmethod

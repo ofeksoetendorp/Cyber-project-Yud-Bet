@@ -8,6 +8,12 @@ import time
 import customtkinter as ctk
 from PIL import Image, ImageTk
 
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+#Please note that if the video has problems passing through the WIFI changing (making it smaller) the height and width in the VideoServer,VideoCLient classes can probably solve it
+
+
 class VideoClient(ClientSocket):
     # המחלקה מנהלת את שליחת, קבלת הווידאו וחלקית משמשת להצגתו
     _WIDTH = 800
